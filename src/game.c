@@ -186,10 +186,6 @@ static void handle_interaction(Game *game)
             diary.id     = 1;
             diary.usable = 0;
             player_add_item(game->player, &diary);
-            /* story_trigger_event will set FLAG_FOUND_DIARY via player_set_flag,
-               but that function treats the arg as a bit position. We also set
-               the flag directly to keep our bitmask check correct. */
-            game->player->flags |= FLAG_FOUND_DIARY;
             story_trigger_event(game->story, game->player,
                                 game->world, "find_diary");
         }
@@ -199,7 +195,6 @@ static void handle_interaction(Game *game)
     else if (tid == 10 && loc_id == 1) {
         if (game->player->flags & FLAG_KEY_OBTAINED) {
             if (!(game->player->flags & FLAG_OPENED_BASEMENT)) {
-                game->player->flags |= FLAG_OPENED_BASEMENT;
                 story_trigger_event(game->story, game->player,
                                     game->world, "open_basement");
                 /* Add a walk-through exit trigger to basement at runtime */
@@ -223,19 +218,16 @@ static void handle_interaction(Game *game)
     /* Ritual circle (Ritual Room, trigger 20) */
     else if (tid == 20 && loc_id == 5) {
         if (!(game->player->flags & FLAG_MONSTER_AWARE)) {
-            game->player->flags |= FLAG_MONSTER_AWARE;
             story_trigger_event(game->story, game->player,
                                 game->world, "study_creature");
         }
         if (!(game->player->flags & FLAG_SOLVED_PUZZLE)) {
-            game->player->flags |= FLAG_SOLVED_PUZZLE;
             story_trigger_event(game->story, game->player,
                                 game->world, "solve_puzzle");
         }
         if ((game->player->flags & FLAG_FOUND_DIARY) &&
             (game->player->flags & FLAG_SOLVED_PUZZLE) &&
             !(game->player->flags & FLAG_KNOWS_TRUTH)) {
-            game->player->flags |= FLAG_KNOWS_TRUTH;
             story_trigger_event(game->story, game->player,
                                 game->world, "learn_truth");
             game->player->flags |= FLAG_LILY_TRUSTS_PLAYER;

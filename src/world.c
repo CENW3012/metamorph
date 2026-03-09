@@ -115,7 +115,7 @@ int world_load_locations(World *world, const char *filepath)
             sscanf(l + 9, "%d", &cur->id);
             const char *p = l + 9;
             while (*p && *p != ' ') p++;
-            while (*p == ' ')       p++;
+            while (*p == ' ') p++;
             strncpy(cur->name, p, LOCATION_NAME_MAX - 1);
         } else if (strncmp(l, "DESC ", 5) == 0 && cur) {
             strncpy(cur->description, l + 5, LOCATION_DESC_MAX - 1);

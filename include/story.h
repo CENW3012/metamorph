@@ -25,7 +25,8 @@ typedef enum {
 #define CHAPTER_FINALE      4
 #define CHAPTER_COUNT       5
 
-/* ── Story flags (bitmask values for Player.flags) ────────────────────── */
+/* ── Story flags (single-bit bitmask values for Player.flags) ──────────── */
+/* Pass these directly to player_set_flag / player_check_flag.             */
 
 #define FLAG_MET_LILY           (1u << 0)
 #define FLAG_FOUND_DIARY        (1u << 1)
