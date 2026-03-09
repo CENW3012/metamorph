@@ -55,7 +55,7 @@ cmake --build build
 ## Running
 
 ```
-Usage: paper_lily [options]
+Usage: 
   -n <name>    Player character name (default: "Stranger")
   -a <path>    Path to assets directory (default: assets)
   -s           Enable slow (typewriter) text output
@@ -66,7 +66,6 @@ Usage: paper_lily [options]
 Example:
 
 ```bash
-./build/paper_lily -n "Alice" -s
 ```
 
 ## Gameplay
