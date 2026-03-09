@@ -1,25 +1,9 @@
-# Paper Lily
 
-A text-based survival horror game written in C, inspired by the visual-novel
-horror game *Paper Lily*. Explore the haunted Ashwood Estate, uncover a dark
-secret, and help a trapped child named Lily – if you dare.
-
-## Features
-
-- **Story-driven** horror with multiple chapters and four possible endings
-- **Choice-based narrative** – your decisions affect stats and unlock different
-  conclusions
-- **Exploration mechanics** – navigate a network of eerie rooms
-- **Character system** – manage Health, Sanity, and Courage
-- **Inventory** – collect and use items to progress
-- **Dialogue trees** – conversations branch based on your courage and items
-- **ANSI colour** terminal output for atmosphere (optional)
-- **Cross-platform** – builds on Linux, macOS, and Windows via CMake
 
 ## Project Structure
 
 ```
-paper_lily/
+Game/
 ├── src/               C source files
 │   ├── main.c         Entry point
 │   ├── game.c         Main game loop and command dispatcher
