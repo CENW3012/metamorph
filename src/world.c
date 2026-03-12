@@ -214,6 +214,8 @@ void world_setup_rooms(World *world)
             /* Portraits */
             ADD_DECOR(loc, 600,  200, 80, 110, 50,40,30,  "portrait");
             ADD_DECOR(loc, 900,  200, 80, 110, 50,40,30,  "portrait");
+            /* Interact: portrait near left wall (trigger 30, dialogue options test) */
+            ADD_TRIGGER(loc, 580, 180, 120, 150, 30, 0.0f, 0.0f);
             /* Staircase (right wall) */
             for (int s = 0; s < 10; s++) {
                 ADD_DECOR(loc, 2200 + s*30, FLOOR_Y - s*30, 120, 20,

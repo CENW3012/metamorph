@@ -49,6 +49,9 @@ Game *game_init(SDL_Window *window, SDL_Renderer *renderer)
     g->last_ticks = SDL_GetTicks();
     g->keys       = SDL_GetKeyboardState(NULL);
 
+    /* Load the dialogue box background image */
+    dialogue_load_texture(&g->dialogue_state, renderer, "assets/dialogue.png");
+
     return g;
 }
 
@@ -59,6 +62,7 @@ void game_cleanup(Game *game)
     if (game->world)         world_destroy(game->world);
     if (game->story)         story_destroy(game->story);
     if (game->dialogue_tree) dialogue_tree_destroy(game->dialogue_tree);
+    dialogue_unload_texture(&game->dialogue_state);
     free(game);
 }
 

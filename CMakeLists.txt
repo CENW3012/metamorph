@@ -8,6 +8,9 @@ list(APPEND CMAKE_PREFIX_PATH "/usr/local")
 
 find_package(SDL3 REQUIRED CONFIG)
 
+# SDL3_image is optional; enables PNG loading for the dialogue background
+find_package(SDL3_image QUIET CONFIG)
+
 include_directories(include)
 
 add_executable(horrorgame
@@ -26,6 +29,12 @@ add_executable(horrorgame
 )
 
 target_link_libraries(horrorgame SDL3::SDL3)
+
+# If SDL3_image was found, enable PNG loading for the dialogue background
+if(TARGET SDL3_image::SDL3_image)
+    target_compile_definitions(horrorgame PRIVATE HAVE_SDL3_IMAGE=1)
+    target_link_libraries(horrorgame SDL3_image::SDL3_image)
+endif()
 
 # Link math library on Linux
 if(UNIX AND NOT APPLE)
