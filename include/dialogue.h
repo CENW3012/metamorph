@@ -44,10 +44,10 @@ typedef struct {
 typedef struct {
     DialogueTree *tree;
     int           current_node_id;
-    float         text_timer;       /* seconds accumulated           */
-    int           chars_visible;    /* how many chars to show now    */
-    int           text_complete;    /* 1 when all chars are shown    */
-    int           selected_choice;  /* highlighted choice index (0-based) */
+    float         text_timer;
+    int           chars_visible;
+    int           text_complete;
+    SDL_Texture   *bg_texture;        /* ADD THIS LINE */
 } DialogueState;
 
 /* ── Tree management ──────────────────────────────────────────────────── */
