@@ -47,6 +47,7 @@ typedef struct {
     float         text_timer;       /* seconds accumulated           */
     int           chars_visible;    /* how many chars to show now    */
     int           text_complete;    /* 1 when all chars are shown    */
+    SDL_Texture  *bg_texture;       /* dialogue box background image */
 } DialogueState;
 
 /* ── Tree management ──────────────────────────────────────────────────── */
@@ -83,6 +84,14 @@ int dialogue_state_advance(DialogueState *ds,
 void dialogue_render(const DialogueState *ds,
                      SDL_Renderer *renderer,
                      int screen_w, int screen_h);
+
+/* Load assets/dialogue.png as the dialogue box background texture.
+ * Call once after the renderer is created; safe to call again to reload. */
+void dialogue_load_texture(DialogueState *ds,
+                           SDL_Renderer *renderer, const char *path);
+
+/* Release the background texture loaded by dialogue_load_texture. */
+void dialogue_unload_texture(DialogueState *ds);
 
 /* Build a default dialogue tree for a given location / NPC. */
 DialogueTree *dialogue_build_for_location(int location_id);

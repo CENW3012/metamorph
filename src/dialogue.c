@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_SDL3_IMAGE
+#include <SDL3_image/SDL_image.h>
+#endif
+
 /* ── Lifecycle ─────────────────────────────────────────────────────────── */
 
 DialogueTree *dialogue_tree_create(void)
@@ -175,6 +179,35 @@ int dialogue_state_advance(DialogueState *ds,
     return 0; /* no available choice: end dialogue */
 }
 
+/* ── Texture management ────────────────────────────────────────────────── */
+
+void dialogue_load_texture(DialogueState *ds,
+                           SDL_Renderer *renderer, const char *path)
+{
+    if (!ds || !renderer || !path) return;
+
+    /* Release any previously loaded texture */
+    if (ds->bg_texture) {
+        SDL_DestroyTexture(ds->bg_texture);
+        ds->bg_texture = NULL;
+    }
+
+#ifdef HAVE_SDL3_IMAGE
+    ds->bg_texture = IMG_LoadTexture(renderer, path);
+    if (!ds->bg_texture)
+        SDL_Log("dialogue: failed to load '%s': %s", path, SDL_GetError());
+#endif
+}
+
+void dialogue_unload_texture(DialogueState *ds)
+{
+    if (!ds) return;
+    if (ds->bg_texture) {
+        SDL_DestroyTexture(ds->bg_texture);
+        ds->bg_texture = NULL;
+    }
+}
+
 /* ── Visual rendering ──────────────────────────────────────────────────── */
 
 #define DLGBOX_H      200
@@ -195,18 +228,27 @@ void dialogue_render(const DialogueState *ds,
     int box_y = screen_h - DLGBOX_H - DLGBOX_MARGIN;
     int box_w = screen_w - DLGBOX_MARGIN * 2;
 
-    /* Background panel */
-    render_filled_rect(renderer,
-        DLGBOX_MARGIN, box_y, box_w, DLGBOX_H,
-        10, 8, 15, 220);
-
-    /* Border */
-    render_rect_outline(renderer,
-        DLGBOX_MARGIN, box_y, box_w, DLGBOX_H,
-        80, 60, 100, 255);
-    render_rect_outline(renderer,
-        DLGBOX_MARGIN+2, box_y+2, box_w-4, DLGBOX_H-4,
-        50, 40, 70, 200);
+    /* Background: PNG image when available, procedural rectangles otherwise */
+    if (ds->bg_texture) {
+        SDL_FRect bg_rect = {
+            (float)DLGBOX_MARGIN,
+            (float)box_y,
+            (float)box_w,
+            (float)DLGBOX_H
+        };
+        SDL_RenderTexture(renderer, ds->bg_texture, NULL, &bg_rect);
+    } else {
+        /* Fallback: procedural background panel and border */
+        render_filled_rect(renderer,
+            DLGBOX_MARGIN, box_y, box_w, DLGBOX_H,
+            10, 8, 15, 220);
+        render_rect_outline(renderer,
+            DLGBOX_MARGIN, box_y, box_w, DLGBOX_H,
+            80, 60, 100, 255);
+        render_rect_outline(renderer,
+            DLGBOX_MARGIN+2, box_y+2, box_w-4, DLGBOX_H-4,
+            50, 40, 70, 200);
+    }
 
     /* Speaker name background */
     int name_w = (int)strlen(node->speaker) * 8 * FONT_SCALE + DLGBOX_PAD * 2;
@@ -284,6 +326,50 @@ DialogueTree *dialogue_build_for_location(int location_id)
         dialogue_add_node(tree, 1, "You",
             "The front door is swollen shut with moisture. "
             "I have no choice but to go deeper.", 1);
+        break;
+
+    case 10: /* Entrance Hall – portrait interaction (test dialogue options) */
+        dialogue_add_node(tree, 0, "You",
+            "A portrait of a stern-faced man in Victorian clothing hangs on "
+            "the wall. The painted eyes seem to follow your every move.", 0);
+
+        strncpy(next.text, "Stare back defiantly.", DIALOGUE_TEXT_MAX-1);
+        next.next_node_id    = 1;
+        next.requires_courage = 0;
+        next.requires_item_id = 0;
+        next.courage_delta   = 5;
+        next.sanity_delta    = -5;
+        next.story_flag      = 0;
+        dialogue_add_choice(dialogue_get_node(tree, 0), &next);
+
+        strncpy(next.text, "Look away quickly.", DIALOGUE_TEXT_MAX-1);
+        next.next_node_id    = 2;
+        next.requires_courage = 0;
+        next.requires_item_id = 0;
+        next.courage_delta   = -5;
+        next.sanity_delta    = 5;
+        next.story_flag      = 0;
+        dialogue_add_choice(dialogue_get_node(tree, 0), &next);
+
+        strncpy(next.text, "...", DIALOGUE_TEXT_MAX-1);
+        next.next_node_id    = 3;
+        next.requires_courage = 0;
+        next.requires_item_id = 0;
+        next.courage_delta   = 0;
+        next.sanity_delta    = 0;
+        next.story_flag      = 0;
+        dialogue_add_choice(dialogue_get_node(tree, 0), &next);
+
+        dialogue_add_node(tree, 1, "You",
+            "The portrait's eyes burn into your mind. You feel a strange "
+            "resonance with the figure in the painting.", 1);
+
+        dialogue_add_node(tree, 2, "You",
+            "As you look away, you catch the faint whisper of a name. "
+            "It might have been the house settling. Or something else.", 1);
+
+        dialogue_add_node(tree, 3, "You",
+            "You move on, feeling uneasy under the painted gaze.", 1);
         break;
 
     case 1: /* Dark Corridor – basement door */

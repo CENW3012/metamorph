@@ -49,6 +49,9 @@ Game *game_init(SDL_Window *window, SDL_Renderer *renderer)
     g->last_ticks = SDL_GetTicks();
     g->keys       = SDL_GetKeyboardState(NULL);
 
+    /* Load the dialogue box background image */
+    dialogue_load_texture(&g->dialogue_state, renderer, "assets/dialogue.png");
+
     return g;
 }
 
@@ -59,6 +62,7 @@ void game_cleanup(Game *game)
     if (game->world)         world_destroy(game->world);
     if (game->story)         story_destroy(game->story);
     if (game->dialogue_tree) dialogue_tree_destroy(game->dialogue_tree);
+    dialogue_unload_texture(&game->dialogue_state);
     free(game);
 }
 
@@ -238,6 +242,10 @@ static void handle_interaction(Game *game)
             /* End will be triggered after dialogue */
             game->ending_type = -1; /* signal to trigger ending on dialogue end */
         }
+    }
+    /* Portrait in Entrance Hall – dialogue options test (trigger 30) */
+    else if (tid == 30 && loc_id == 0) {
+        game->dialogue_tree = dialogue_build_for_location(10);
     }
     /* Default interaction */
     else {
