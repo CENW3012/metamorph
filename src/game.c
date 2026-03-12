@@ -474,9 +474,9 @@ void game_update(Game *game)
         p->x += p->vx * dt;
         p->y += p->vy * dt;
 
-        /* ── Floor clamp (vertical movement limited) ── */
-        float floor_min = (float)(FLOOR_Y - 30);
-        float floor_max = (float)(FLOOR_Y + 10);
+        /* ── Floor clamp (allow full vertical movement) ── */
+        float floor_min = 30.0f;
+        float floor_max = (float)(ROOM_H - 30);
         if (p->y < floor_min) p->y = floor_min;
         if (p->y > floor_max) p->y = floor_max;
 
