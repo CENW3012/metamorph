@@ -299,7 +299,7 @@ void dialogue_render(const DialogueState *ds,
 
     /* Speaker name */
     render_text(renderer, node->speaker,
-                DLGBOX_MARGIN + DLGBOX_PAD, box_y - 24,
+                DLGBOX_MARGIN + DLGBOX_PAD+70, box_y +54,
                 FONT_SCALE, 200, 180, 255);
 
     /* Dialogue text (limited by chars_visible) */
@@ -309,8 +309,8 @@ void dialogue_render(const DialogueState *ds,
     memcpy(visible, node->text, (size_t)len);
     visible[len] = '\0';
 
-    int text_x     = DLGBOX_MARGIN + DLGBOX_PAD;
-    int text_y     = box_y + DLGBOX_PAD;
+    int text_x     = DLGBOX_MARGIN + DLGBOX_PAD+55;
+    int text_y     = box_y + DLGBOX_PAD+80;
     int text_max_w = box_w - DLGBOX_PAD * 2;
     int line_h     = 8 * FONT_SCALE + 6;
 
