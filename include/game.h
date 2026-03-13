@@ -9,6 +9,7 @@
 #include "dialogue.h"
 #include "story.h"
 #include "ui.h"
+#include "npc.h"
 
 /* ── Game states ──────────────────────────────────────────────────────── */
 
@@ -33,11 +34,12 @@ typedef struct {
     GameState     state;
 
     /* Subsystems */
-    Player      *player;
-    World       *world;
-    StoryState  *story;
+    Player        *player;
+    World         *world;
+    StoryState    *story;
     DialogueTree  *dialogue_tree;   /* current NPC dialogue tree    */
     DialogueState  dialogue_state;  /* visual dialogue playback     */
+    NPCManager    *npc_manager;     /* NPC system                   */
 
     /* Camera */
     Camera camera;
