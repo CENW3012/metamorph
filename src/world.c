@@ -197,30 +197,29 @@ void world_setup_rooms(World *world)
 
         switch (loc->id) {
 
-        /* ── 0: Big Square Room ──────────────────────────────────── */
+        /* ── 0: Entrance Hall ───────────────────────────────────────── */
             case 0: {
-                int npc_x = 1280;
+                int npc_x = STRANGER_NPC_X;
                 int npc_y = 360;
-                
+
                 loc->wall_r  = 40;  loc->wall_g  = 30;  loc->wall_b  = 25;
                 loc->floor_r = 90;  loc->floor_g = 70;  loc->floor_b = 50;
                 loc->ceil_r  = 20;  loc->ceil_g  = 15;  loc->ceil_b  = 10;
                 loc->spawn_x = (float)(ROOM_W / 2);
                 loc->spawn_y = (float)(ROOM_H / 2);
 
-                /* Stranger NPC - head and body */
-                ADD_DECOR(loc, npc_x,        npc_y, 30,  60, 230,200,30, "body");
-                ADD_DECOR(loc, npc_x - 7,    npc_y - 70, 44,  44, 240,210,40, "head");
-                printf("DEBUG: Added %d decorations to location 0\n", loc->decor_count);
+                /* Stranger NPC – body and head */
+                ADD_DECOR(loc, npc_x,     npc_y,      30, 60, 230, 200, 30, "body");
+                ADD_DECOR(loc, npc_x - 7, npc_y - 70, 44, 44, 240, 210, 40, "head");
 
-                /* NPC interaction trigger */
+                /* NPC interaction trigger (trigger_id=40) */
                 ADD_TRIGGER(loc, npc_x - 80, npc_y - 100, 160, 180, 40, 0.0f, 0.0f);
-                
-                /* Colliders */
-                ADD_COLLIDER(loc, 0, 0, 40, ROOM_H);
-                ADD_COLLIDER(loc, ROOM_W-40, 0, 40, ROOM_H);
-                ADD_COLLIDER(loc, 0, 0, ROOM_W, 40);
-                ADD_COLLIDER(loc, 0, ROOM_H-40, ROOM_W, 40);
+
+                /* Wall colliders – plain rectangle */
+                ADD_COLLIDER(loc, 0,           0, 40,     ROOM_H); /* left  */
+                ADD_COLLIDER(loc, ROOM_W - 40, 0, 40,     ROOM_H); /* right */
+                ADD_COLLIDER(loc, 0,           0, ROOM_W, 40);     /* top   */
+                ADD_COLLIDER(loc, 0, ROOM_H - 40, ROOM_W, 40);    /* bottom */
                 break;
             }
 
