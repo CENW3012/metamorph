@@ -215,6 +215,13 @@ void world_setup_rooms(World *world)
                 /* NPC interaction trigger (trigger_id=40) */
                 ADD_TRIGGER(loc, npc_x - 80, npc_y - 100, 160, 180, 40, 0.0f, 0.0f);
 
+                /* Mysterious portrait on the left wall */
+                ADD_DECOR(loc, 330, 180,  90, 120,  80,  50,  20, "frame");  /* outer frame */
+                ADD_DECOR(loc, 342, 192,  66,  90, 120,  90,  60, "canvas"); /* painted face */
+
+                /* Portrait interaction trigger (trigger_id=30) */
+                ADD_TRIGGER(loc, 270, 140, 200, 200, 30, 0.0f, 0.0f);
+
                 /* Wall colliders – plain rectangle */
                 ADD_COLLIDER(loc, 0,           0, 40,     ROOM_H); /* left  */
                 ADD_COLLIDER(loc, ROOM_W - 40, 0, 40,     ROOM_H); /* right */
