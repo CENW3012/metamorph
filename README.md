@@ -1,24 +1,14 @@
+# Metamorph
 
+## Project Description
+This project is a horror-themed game that immerses players in a chilling narrative, exploring the boundaries of fear and reality.
 
-## Project Structure
+## File Documentation
+The following files contribute to the project:
+- **main.py**: The entry point for the game, handling initialization and game loop.
+- **settings.py**: Configuration file where game settings can be adjusted.
+- **assets/**: Directory containing game assets such as images and sounds.
+- **src/**: Source code folder containing all game logic and structure.
+- **README.md**: Documentation file (this file) that gives an overview of the project and instructions for use.
 
-```
-Game/
-├── src/               C source files
-│   ├── main.c         Entry point
-│   ├── game.c         Main game loop and command dispatcher
-│   ├── player.c       Player stats, inventory, flags
-│   ├── world.c        Location graph and movement
-│   ├── dialogue.c     Dialogue tree and interactive conversations
-│   ├── story.c        Chapter progression and endings
-│   ├── ui.c           Terminal rendering and menus
-│   └── utils.c        String, file, and random helpers
-├── include/           Header files
-├── assets/
-│   ├── story.txt      Narrative content
-│   └── locations.txt  Location definitions
-├── docs/
-│   └── DESIGN.md      Full game design document
-└── CMakeLists.txt     Cross-platform build configuration
-```
-
+Feel free to explore the files for a deeper understanding of the game mechanics and design decisions.
