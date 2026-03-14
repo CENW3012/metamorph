@@ -79,7 +79,6 @@
 
 ## What is Planned Next
 
-(Based on `docs/DESIGN.md` Future Work section):
 1. **Persistent Save/Load**: Binary or JSON-based save system for player progress
 2. **More NPCs and Branching Dialogue Trees**: Expand NPC count and dialogue complexity
 3. **Sound Cues via Audio Library**: Integrate audio library for ambient sound and music
