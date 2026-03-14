@@ -1,0 +1,73 @@
+name: Build HorrorGame
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  SDL3_VERSION: "3.2.4"
+
+jobs:
+  build-windows:
+    name: Windows (MSVC)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download SDL3 (VC prebuilt)
+        shell: pwsh
+        run: |
+          $ZIP = "SDL3-devel-${{ env.SDL3_VERSION }}-VC.zip"
+          Invoke-WebRequest `
+            -Uri "https://github.com/libsdl-org/SDL/releases/download/release-${{ env.SDL3_VERSION }}/${ZIP}" `
+            -OutFile $ZIP
+          Expand-Archive $ZIP -DestinationPath .
+          echo "SDL3_DIR=${{ github.workspace }}\SDL3-${{ env.SDL3_VERSION }}\cmake" >> $env:GITHUB_ENV
+
+      - name: Configure CMake
+        # SDL3_DIR is required on Windows because SDL3 is not installed system-wide;
+        # macOS finds it automatically via system paths.
+        run: cmake -B build -DSDL3_DIR="${{ env.SDL3_DIR }}"
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Stage artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist
+          Copy-Item "build\Release\horrorgame.exe" dist\
+          Copy-Item "SDL3-${{ env.SDL3_VERSION }}\lib\x64\SDL3.dll" dist\
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: horrorgame-windows
+          path: dist/
+
+  build-macos:
+    name: macOS (Clang)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SDL3
+        run: brew install sdl3
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: horrorgame-macos
+          path: build/horrorgame
+
