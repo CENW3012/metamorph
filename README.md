@@ -169,7 +169,6 @@ cmake --build build
 ./build/horrorgame.exe          # Windows
 ```
 
-The game window will open with the title "Project Yozora – A Horror Story" at **1280×720 resolution** with a dark purple background.
 
 ### Controls
 
