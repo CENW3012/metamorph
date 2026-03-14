@@ -72,7 +72,6 @@
 - **Advanced NPC Behavior**: NPC system is defined but largely haven't been implemented
 - **Additional Dialogue Trees**: Dialogue system exists but full dialogue content is incomplete
 - **Additional Endings/Secret Paths**: None
-- **Procedural Generation**: Atmospheric descriptions are static; no procedural generation of environment descriptions
 - **More NPCs/Characters**: Only Main Character and a test NPC
 
 ---
@@ -100,7 +99,6 @@
    - Core graphics and event handling library
    - Install via package manager or from source
    - On macOS (Homebrew): `brew install sdl3`
-   - On Linux (Ubuntu): `sudo apt-get install libsdl3-dev`
    - On Windows: Download prebuilt binaries or compile from source
    
 2. **SDL3_image** 
