@@ -3,12 +3,20 @@ project(HorrorGame C)
 
 set(CMAKE_C_STANDARD 11)
 
-# Allow finding SDL3 installed in /usr/local
+# Allow finding SDL3 installed in /usr/local (macOS native builds)
 list(APPEND CMAKE_PREFIX_PATH "/usr/local")
 list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/sdl3_image")
 
-find_package(SDL3 REQUIRED CONFIG)
+# Windows cross-compilation via MinGW (used when mingw.cmake toolchain is active)
+if(MINGW OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    # Support both Intel (/usr/local) and Apple Silicon (/opt/homebrew) Homebrew prefixes
+    list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/mingw-w64/toolchain-x86_64/x86_64-w64-mingw32")
+    list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/mingw-w64/toolchain-x86_64/x86_64-w64-mingw32")
+    # Produce a .exe output
+    set(CMAKE_EXECUTABLE_SUFFIX ".exe")
+endif()
 
+find_package(SDL3 REQUIRED CONFIG)
 
 # SDL3_image is optional; enables PNG loading for the dialogue background
 find_package(SDL3_image CONFIG)
