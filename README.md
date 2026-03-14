@@ -198,17 +198,15 @@ cmake --build build
 ### Known Issues and Limitations
 
 1. **No Persistent Save System**: Game progress is lost on exit; always starts from the beginning
-2. **Limited NPC Implementation**: Only the Stranger NPC in the Entrance Hall has visible implementation; Lily exists in dialogue but has no physical world presence (visual representation)
+2. **Limited NPC Implementation**: Only a test NPC in present in the first world that has visible implementation.
 3. **Static Atmosphere**: Environmental descriptions are hardcoded; no dynamic generation
-4. **No Audio**: Horror atmosphere relies solely on visuals and narrative; no sound effects or music
-5. **Performance**: Large dialogue trees or many simultaneous NPCs may cause minor frame rate dips
-6. **Dialogue Tree Edge Cases**: 
-   - Very long dialogue text may overflow the dialogue box (rendering clipped)
-   - Nested conditionals (e.g., requiring both an item AND a courage threshold) not fully tested
-7. **Collision Edge Cases**: Player can occasionally clip slightly into walls during fast diagonal movement
-8. **Camera Smoothing**: Rapid movement changes can cause minor visual jitter (smooth follow has slight lag by design)
-9. **Windows Compatibility**: Cross-compilation tested but runtime on Windows MinGW may require SDL3 DLLs in system PATH or local directory
-10. **Platform-Specific Paths**: Asset file paths are hardcoded; different OSes may require path adjustments if assets folder is moved
+4. **No Audio**: No sound effects or music
+5. **Dialogue Tree Edge Cases**: 
+   - Very long dialogue text may overflow the dialogue box 
+   - Not Well positioned
+6. **Collision Edge Cases**: Not implemented as world is not built yet
+7. **Lack of assets files**: Placeholder is present for now
+8. **Movement**: Movement is inconsistent and will be tweak iin the future
 
 ---
 
