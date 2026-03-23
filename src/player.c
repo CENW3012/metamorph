@@ -16,9 +16,6 @@ Player *player_create(const char *name)
     if (!p) return NULL;
 
     strncpy(p->name, name ? name : "Unknown", PLAYER_NAME_MAX - 1);
-    p->health   = 100;
-    p->sanity   = 100;
-    p->courage  = 50;
 
     /* Starting world position (overridden by room spawn on load). */
     p->x = 400.0f;
@@ -27,35 +24,46 @@ Player *player_create(const char *name)
 
     animation_init(&p->idle_anim, 2, 1.5f, 1);
     animation_init(&p->walk_anim, 4, 8.0f, 1);
+    animation_init(&p->backwards_anim, 2, 8.0f, 1);
+
+    p->sprite_texture    = NULL;
+    p->sprite_w          = PLAYER_W;
+    p->sprite_h          = PLAYER_SPRITE_H;
+    p->backwards_texture = NULL;
 
     return p;
 }
 
 void player_destroy(Player *player)
 {
+    if (!player) return;
+    if (player->sprite_texture)
+        render_texture_destroy(player->sprite_texture);
+    if (player->backwards_texture)
+        render_texture_destroy(player->backwards_texture);
     free(player);
 }
 
-/* ── Stat modification ─────────────────────────────────────────────────── */
+/* ── Sprite ────────────────────────────────────────────────────────────── */
 
-void player_modify_health(Player *player, int delta)
+void player_set_sprite(Player *player, SDL_Texture *texture, int w, int h)
 {
     if (!player) return;
-    player->health = utils_clamp(player->health + delta, 0, 100);
+    if (player->sprite_texture)
+        render_texture_destroy(player->sprite_texture);
+    player->sprite_texture = texture;
+    player->sprite_w       = (w > 0) ? w : PLAYER_W;
+    player->sprite_h       = (h > 0) ? h : PLAYER_SPRITE_H;
 }
 
-void player_modify_sanity(Player *player, int delta)
+void player_set_backwards_sprite(Player *player, SDL_Texture *texture, int w, int h)
 {
     if (!player) return;
-    player->sanity = utils_clamp(player->sanity + delta, 0, 100);
-    if (delta < 0 && player->sanity < 30)
-        player->courage = utils_clamp(player->courage + delta / 2, 0, 100);
-}
-
-void player_modify_courage(Player *player, int delta)
-{
-    if (!player) return;
-    player->courage = utils_clamp(player->courage + delta, 0, 100);
+    if (player->backwards_texture)
+        render_texture_destroy(player->backwards_texture);
+    player->backwards_texture = texture;
+    player->sprite_w          = (w > 0) ? w : PLAYER_W;
+    player->sprite_h          = (h > 0) ? h : PLAYER_SPRITE_H;
 }
 
 /* ── Inventory ─────────────────────────────────────────────────────────── */
@@ -125,13 +133,10 @@ int player_check_flag(const Player *player, uint32_t mask)
 
 /* ── Console display ───────────────────────────────────────────────────── */
 
-void player_print_stats(const Player *player)
+void player_print_info(const Player *player)
 {
     if (!player) return;
     printf("\n── Character: %s ───────────────────────────\n", player->name);
-    printf("  Health  : %3d / 100\n", player->health);
-    printf("  Sanity  : %3d / 100\n", player->sanity);
-    printf("  Courage : %3d / 100\n", player->courage);
     printf("  Items   : %d / %d\n",
            player->inventory_count, INVENTORY_CAPACITY);
     printf("───────────────────────────────────────────\n");
@@ -145,7 +150,11 @@ void player_update(Player *player, float dt)
 
     /* Advance animation */
     if (player->is_moving) {
-        animation_update(&player->walk_anim, dt);
+        if (player->is_moving_backwards) {
+            animation_update(&player->backwards_anim, dt);
+        } else {
+            animation_update(&player->walk_anim, dt);
+        }
     } else {
         animation_update(&player->idle_anim, dt);
     }
@@ -153,8 +162,9 @@ void player_update(Player *player, float dt)
 
 /* ── Visual render ─────────────────────────────────────────────────────── */
 /*
- * The player is drawn as a simple pixel-art silhouette using coloured
- * rectangles (no external image required).
+ * The player is drawn using a sprite texture if one is set.
+ * When moving backwards the character turns around, achieved by inverting
+ * the horizontal flip relative to the normal facing direction.
  *
  *   screen_x / screen_y = top-left corner of the player sprite on screen.
  */
@@ -163,73 +173,31 @@ void player_render(Player *player, SDL_Renderer *renderer,
 {
     if (!player || !renderer) return;
 
-    int w = PLAYER_W;
-    int h = PLAYER_SPRITE_H;
+    int w = 32;  /* sprite frame width  */
+    int h = 64;  /* sprite frame height */
 
-    /* Idle bobbing: shift up by 0–2 px depending on idle frame. */
-    int bob = 0;
-    if (!player->is_moving) {
-        int f = animation_get_frame(&player->idle_anim);
-        bob   = (f == 0) ? 0 : -2;
+    /* When moving backwards the character turns around, so invert the flip. */
+    int effective_right = player->is_moving_backwards
+                          ? !player->facing_right
+                          : player->facing_right;
+    SDL_FlipMode flip = effective_right ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
+    SDL_Texture *tex  = NULL;
+    int          frame = 0;
+
+    if (player->is_moving_backwards && player->backwards_texture) {
+        tex   = player->backwards_texture;
+        frame = animation_get_frame(&player->backwards_anim);
+    } else if (player->sprite_texture) {
+        tex   = player->sprite_texture;
+        frame = player->is_moving
+                ? animation_get_frame(&player->walk_anim)
+                : animation_get_frame(&player->idle_anim);
     }
-    int sy = screen_y + bob;
 
-    /* Walk stride: shift foot rect left/right by frame. */
-    int stride = 0;
-    if (player->is_moving) {
-        int f = animation_get_frame(&player->walk_anim);
-        static const int stride_offsets[4] = {0, 2, 0, -2};
-        stride = stride_offsets[f];
-        if (!player->facing_right) stride = -stride;
-    }
-
-    /* ── Draw body parts ── */
-    /* Torso */
-    render_filled_rect(renderer,
-        screen_x + 4, sy + h/3,
-        w - 8, h * 2/5,
-        80, 80, 110, 255);
-
-    /* Head */
-    render_filled_rect(renderer,
-        screen_x + 5, sy + 2,
-        w - 10, h/4,
-        200, 170, 140, 255);
-
-    /* Hair */
-    render_filled_rect(renderer,
-        screen_x + 4, sy,
-        w - 8, h/8,
-        60, 40, 20, 255);
-
-    /* Legs */
-    int leg_y = sy + h * 3/4;
-    render_filled_rect(renderer,
-        screen_x + 3 + stride, leg_y,
-        (w - 6) / 2 - 1, h/4,
-        60, 60, 90, 255);
-    render_filled_rect(renderer,
-        screen_x + w/2 + 1 - stride, leg_y,
-        (w - 6) / 2 - 1, h/4,
-        60, 60, 90, 255);
-
-    /* Eyes (direction-dependent) */
-    int eye_x = player->facing_right
-                ? (screen_x + w - 8)
-                : (screen_x + 4);
-    render_filled_rect(renderer,
-        eye_x, sy + h/4 - 2,
-        3, 3,
-        30, 20, 20, 255);
-
-    /* Sanity effect: darken the character if sanity is low */
-    if (player->sanity < 30) {
-        /* Draw a semi-transparent dark overlay */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 40,
-            (Uint8)(180 - player->sanity * 3));
-        SDL_FRect overlay = {
-            (float)screen_x, (float)sy, (float)w, (float)h
-        };
-        SDL_RenderFillRect(renderer, &overlay);
+    if (tex) {
+        SDL_FRect src = {(float)(frame * w), 0.0f, (float)w, (float)h};
+        SDL_FRect dst = {(float)screen_x, (float)screen_y, (float)w, (float)h};
+        SDL_RenderTextureRotated(renderer, tex, &src, &dst, 0, NULL, flip);
     }
 }

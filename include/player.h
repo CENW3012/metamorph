@@ -29,11 +29,8 @@ typedef struct {
 /* ── Player ────────────────────────────────────────────────────────────── */
 
 typedef struct {
-    /* Identity & stats */
+    /* Identity */
     char     name[PLAYER_NAME_MAX];
-    int      health;        /* 0–100                               */
-    int      sanity;        /* 0–100; drops on horror events       */
-    int      courage;       /* 0–100; affects dialogue options     */
 
     /* Inventory */
     int      inventory_count;
@@ -49,10 +46,18 @@ typedef struct {
     float    vx, vy;        /* velocity in pixels/second            */
     int      facing_right;  /* 1 = right, 0 = left                  */
     int      is_moving;     /* 1 if walking this frame              */
+    int      is_moving_backwards; /* 1 if moving backward this frame */
 
     /* Animations */
     Animation idle_anim;
     Animation walk_anim;
+    Animation backwards_anim;  /* backward movement animation        */
+
+    /* Sprites */
+    SDL_Texture *sprite_texture;    /* forward/idle sprite sheet    */
+    int          sprite_w;
+    int          sprite_h;
+    SDL_Texture *backwards_texture; /* backward movement sprite sheet */
 } Player;
 
 /* ── API ───────────────────────────────────────────────────────────────── */
@@ -60,10 +65,9 @@ typedef struct {
 Player *player_create(const char *name);
 void    player_destroy(Player *player);
 
-/* Stat modification */
-void player_modify_health(Player *player, int delta);
-void player_modify_sanity(Player *player, int delta);
-void player_modify_courage(Player *player, int delta);
+/* Sprite */
+void player_set_sprite(Player *player, SDL_Texture *texture, int w, int h);
+void player_set_backwards_sprite(Player *player, SDL_Texture *texture, int w, int h);
 
 /* Inventory */
 int  player_add_item(Player *player, const Item *item);
@@ -77,7 +81,7 @@ void player_clear_flag(Player *player, uint32_t mask);
 int  player_check_flag(const Player *player, uint32_t mask);
 
 /* Display (console – kept for debugging) */
-void player_print_stats(const Player *player);
+void player_print_info(const Player *player);
 
 /* Visual update and render */
 void player_update(Player *player, float dt);
