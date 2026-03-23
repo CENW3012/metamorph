@@ -29,11 +29,8 @@ typedef struct {
 /* ── Player ────────────────────────────────────────────────────────────── */
 
 typedef struct {
-    /* Identity & stats */
+    /* Identity */
     char     name[PLAYER_NAME_MAX];
-    int      health;        /* 0–100                               */
-    int      sanity;        /* 0–100; drops on horror events       */
-    int      courage;       /* 0–100; affects dialogue options     */
 
     /* Inventory */
     int      inventory_count;
@@ -53,6 +50,11 @@ typedef struct {
     /* Animations */
     Animation idle_anim;
     Animation walk_anim;
+
+    /* Sprite (optional – if NULL, falls back to rectangle rendering) */
+    SDL_Texture *sprite_texture;
+    int          sprite_w;
+    int          sprite_h;
 } Player;
 
 /* ── API ───────────────────────────────────────────────────────────────── */
@@ -60,10 +62,8 @@ typedef struct {
 Player *player_create(const char *name);
 void    player_destroy(Player *player);
 
-/* Stat modification */
-void player_modify_health(Player *player, int delta);
-void player_modify_sanity(Player *player, int delta);
-void player_modify_courage(Player *player, int delta);
+/* Sprite */
+void player_set_sprite(Player *player, SDL_Texture *texture, int w, int h);
 
 /* Inventory */
 int  player_add_item(Player *player, const Item *item);
@@ -77,7 +77,7 @@ void player_clear_flag(Player *player, uint32_t mask);
 int  player_check_flag(const Player *player, uint32_t mask);
 
 /* Display (console – kept for debugging) */
-void player_print_stats(const Player *player);
+void player_print_info(const Player *player);
 
 /* Visual update and render */
 void player_update(Player *player, float dt);

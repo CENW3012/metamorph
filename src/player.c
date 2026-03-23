@@ -16,9 +16,6 @@ Player *player_create(const char *name)
     if (!p) return NULL;
 
     strncpy(p->name, name ? name : "Unknown", PLAYER_NAME_MAX - 1);
-    p->health   = 100;
-    p->sanity   = 100;
-    p->courage  = 50;
 
     /* Starting world position (overridden by room spawn on load). */
     p->x = 400.0f;
@@ -28,34 +25,31 @@ Player *player_create(const char *name)
     animation_init(&p->idle_anim, 2, 1.5f, 1);
     animation_init(&p->walk_anim, 4, 8.0f, 1);
 
+    p->sprite_texture = NULL;
+    p->sprite_w       = PLAYER_W;
+    p->sprite_h       = PLAYER_SPRITE_H;
+
     return p;
 }
 
 void player_destroy(Player *player)
 {
+    if (!player) return;
+    if (player->sprite_texture)
+        render_texture_destroy(player->sprite_texture);
     free(player);
 }
 
-/* ── Stat modification ─────────────────────────────────────────────────── */
+/* ── Sprite ────────────────────────────────────────────────────────────── */
 
-void player_modify_health(Player *player, int delta)
+void player_set_sprite(Player *player, SDL_Texture *texture, int w, int h)
 {
     if (!player) return;
-    player->health = utils_clamp(player->health + delta, 0, 100);
-}
-
-void player_modify_sanity(Player *player, int delta)
-{
-    if (!player) return;
-    player->sanity = utils_clamp(player->sanity + delta, 0, 100);
-    if (delta < 0 && player->sanity < 30)
-        player->courage = utils_clamp(player->courage + delta / 2, 0, 100);
-}
-
-void player_modify_courage(Player *player, int delta)
-{
-    if (!player) return;
-    player->courage = utils_clamp(player->courage + delta, 0, 100);
+    if (player->sprite_texture)
+        render_texture_destroy(player->sprite_texture);
+    player->sprite_texture = texture;
+    player->sprite_w       = (w > 0) ? w : PLAYER_W;
+    player->sprite_h       = (h > 0) ? h : PLAYER_SPRITE_H;
 }
 
 /* ── Inventory ─────────────────────────────────────────────────────────── */
@@ -125,13 +119,10 @@ int player_check_flag(const Player *player, uint32_t mask)
 
 /* ── Console display ───────────────────────────────────────────────────── */
 
-void player_print_stats(const Player *player)
+void player_print_info(const Player *player)
 {
     if (!player) return;
     printf("\n── Character: %s ───────────────────────────\n", player->name);
-    printf("  Health  : %3d / 100\n", player->health);
-    printf("  Sanity  : %3d / 100\n", player->sanity);
-    printf("  Courage : %3d / 100\n", player->courage);
     printf("  Items   : %d / %d\n",
            player->inventory_count, INVENTORY_CAPACITY);
     printf("───────────────────────────────────────────\n");
@@ -153,8 +144,8 @@ void player_update(Player *player, float dt)
 
 /* ── Visual render ─────────────────────────────────────────────────────── */
 /*
- * The player is drawn as a simple pixel-art silhouette using coloured
- * rectangles (no external image required).
+ * The player is drawn using a sprite texture if one is set, otherwise
+ * falls back to a simple pixel-art silhouette made of coloured rectangles.
  *
  *   screen_x / screen_y = top-left corner of the player sprite on screen.
  */
@@ -163,8 +154,8 @@ void player_render(Player *player, SDL_Renderer *renderer,
 {
     if (!player || !renderer) return;
 
-    int w = PLAYER_W;
-    int h = PLAYER_SPRITE_H;
+    int w = player->sprite_w;
+    int h = player->sprite_h;
 
     /* Idle bobbing: shift up by 0–2 px depending on idle frame. */
     int bob = 0;
@@ -173,6 +164,25 @@ void player_render(Player *player, SDL_Renderer *renderer,
         bob   = (f == 0) ? 0 : -2;
     }
     int sy = screen_y + bob;
+
+    /* ── Sprite texture path ── */
+    if (player->sprite_texture) {
+        SDL_FRect dest = {
+            (float)screen_x, (float)sy, (float)w, (float)h
+        };
+        if (!player->facing_right) {
+            /* Flip horizontally using SDL_RenderTextureRotated */
+            SDL_RenderTextureRotated(renderer, player->sprite_texture,
+                                     NULL, &dest,
+                                     0.0, NULL,
+                                     SDL_FLIP_HORIZONTAL);
+        } else {
+            SDL_RenderTexture(renderer, player->sprite_texture, NULL, &dest);
+        }
+        return;
+    }
+
+    /* ── Fallback: rectangle silhouette ── */
 
     /* Walk stride: shift foot rect left/right by frame. */
     int stride = 0;
@@ -183,7 +193,6 @@ void player_render(Player *player, SDL_Renderer *renderer,
         if (!player->facing_right) stride = -stride;
     }
 
-    /* ── Draw body parts ── */
     /* Torso */
     render_filled_rect(renderer,
         screen_x + 4, sy + h/3,
@@ -221,15 +230,4 @@ void player_render(Player *player, SDL_Renderer *renderer,
         eye_x, sy + h/4 - 2,
         3, 3,
         30, 20, 20, 255);
-
-    /* Sanity effect: darken the character if sanity is low */
-    if (player->sanity < 30) {
-        /* Draw a semi-transparent dark overlay */
-        SDL_SetRenderDrawColor(renderer, 0, 0, 40,
-            (Uint8)(180 - player->sanity * 3));
-        SDL_FRect overlay = {
-            (float)screen_x, (float)sy, (float)w, (float)h
-        };
-        SDL_RenderFillRect(renderer, &overlay);
-    }
 }

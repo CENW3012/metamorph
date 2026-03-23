@@ -20,14 +20,6 @@ void draw_button(SDL_Renderer *renderer, const Button *button);
 
 void ui_draw_hud(SDL_Renderer *renderer, const Player *player);
 
-/* ── Stat bar ─────────────────────────────────────────────────────────── */
-
-void ui_draw_stat_bar(SDL_Renderer *renderer,
-                      int x, int y, int w, int h,
-                      int value, int max_value,
-                      Uint8 r, Uint8 g, Uint8 b,
-                      const char *label);
-
 /* ── Interaction prompt ───────────────────────────────────────────────── */
 
 void ui_draw_interact_prompt(SDL_Renderer *renderer,

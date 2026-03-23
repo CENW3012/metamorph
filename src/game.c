@@ -163,18 +163,15 @@ void game_trigger_ending(Game *game)
 
 /* ── Interaction handler ───────────────────────────────────────────────── */
 
-/* Apply sanity/courage changes from the currently selected dialogue choice. */
-static void apply_dialogue_choice_stats(Game *game)
+/* Apply story flag from the currently selected dialogue choice. */
+static void apply_dialogue_choice_flag(Game *game)
 {
     if (!game || !game->player || !game->dialogue_state.text_complete) return;
 
     const DialogueChoice *ch = dialogue_state_get_selected(
-        &game->dialogue_state,
-        game->player->courage, 0);
+        &game->dialogue_state, 0);
     if (!ch) return;
 
-    player_modify_sanity (game->player, ch->sanity_delta);
-    player_modify_courage(game->player, ch->courage_delta);
     if (ch->story_flag)
         game->player->flags |= (uint32_t)ch->story_flag;
 }
@@ -370,10 +367,9 @@ void game_handle_event(Game *game, SDL_Event *event)
             if (event->key.key == SDLK_RETURN ||
                 event->key.key == SDLK_SPACE  ||
                 event->key.key == SDLK_E) {
-                /* Apply stat changes from the chosen option before advancing */
-                apply_dialogue_choice_stats(game);
-                int cont = dialogue_state_advance(&game->dialogue_state,
-                    game->player ? game->player->courage : 50, 0);
+                /* Apply story flag from the chosen option before advancing */
+                apply_dialogue_choice_flag(game);
+                int cont = dialogue_state_advance(&game->dialogue_state, 0);
                 if (!cont) {
                     game_end_dialogue(game);
                     /* Trigger ending if flagged */
@@ -385,10 +381,9 @@ void game_handle_event(Game *game, SDL_Event *event)
                 game_end_dialogue(game);
         }
         if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-            /* Apply stat changes before advancing on mouse click too */
-            apply_dialogue_choice_stats(game);
-            int cont = dialogue_state_advance(&game->dialogue_state,
-                game->player ? game->player->courage : 50, 0);
+            /* Apply story flag before advancing on mouse click too */
+            apply_dialogue_choice_flag(game);
+            int cont = dialogue_state_advance(&game->dialogue_state, 0);
             if (!cont) {
                 game_end_dialogue(game);
                 if (game->ending_type == -1)
@@ -563,16 +558,6 @@ void game_update(Game *game)
                 story_advance_chapter(game->story, p, game->world);
             else if (ch == 3 && (p->flags & FLAG_KNOWS_TRUTH))
                 story_advance_chapter(game->story, p, game->world);
-        }
-
-        /* ── Danger zone: sanity drain ── */
-        if (loc && loc->is_danger_zone) {
-            static float danger_timer = 0.0f;
-            danger_timer += dt;
-            if (danger_timer >= 5.0f) {
-                danger_timer = 0.0f;
-                player_modify_sanity(p, -2);
-            }
         }
 
     } else if (game->state == GAME_STATE_DIALOGUE && game->player) {
@@ -777,15 +762,6 @@ void game_render_inventory(Game *game)
                                 is_sel?175:115, is_sel?145:95, is_sel?195:135);
         }
     }
-
-    /* Stat bars in bottom strip */
-    int bar_y = py + ph - 36;
-    ui_draw_stat_bar(r, px+18, bar_y, 100, 12,
-                     p->health,  100, 180,40,40,  "HP");
-    ui_draw_stat_bar(r, px+150, bar_y, 100, 12,
-                     p->sanity,  100, 40,80,180,  "SN");
-    ui_draw_stat_bar(r, px+282, bar_y, 100, 12,
-                     p->courage, 100, 180,150,30, "CR");
 
     render_text_centered(r, "[I] or [ESC] to close",
                          WINDOW_W/2, py+ph-16, 1, 65,52,78);

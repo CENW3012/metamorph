@@ -105,8 +105,8 @@ Ending story_determine_ending(const StoryState *state,
                                const Player *player) {
     if (!state || !player) return ENDING_NONE;
 
-    /* Corruption: sanity < 20 or dark_choices > 5 */
-    if (player->sanity < 20 || state->dark_choices > 5)
+    /* Corruption: dark_choices > 5 */
+    if (state->dark_choices > 5)
         return ENDING_CORRUPTION;
 
     /* Truth: player knows the truth and has Lily's trust */
@@ -114,9 +114,8 @@ Ending story_determine_ending(const StoryState *state,
         player_check_flag(player, FLAG_LILY_TRUSTS_PLAYER))
         return ENDING_TRUTH;
 
-    /* Sacrifice: courage >= 70 and monster is aware */
-    if (player->courage >= 70 &&
-        player_check_flag(player, FLAG_MONSTER_AWARE))
+    /* Sacrifice: monster is aware */
+    if (player_check_flag(player, FLAG_MONSTER_AWARE))
         return ENDING_SACRIFICE;
 
     /* Default: escape */
@@ -140,7 +139,6 @@ int story_trigger_event(StoryState *state, Player *player,
     if (strcmp(event_name, "meet_lily") == 0) {
         if (player_check_flag(player, FLAG_MET_LILY)) return 0;
         player_set_flag(player, FLAG_MET_LILY);
-        player_modify_sanity(player, -10);
         printf("A small girl steps out of the shadows.\n"
                "\"You shouldn't be here,\" she whispers.\n");
         return 1;
@@ -162,7 +160,6 @@ int story_trigger_event(StoryState *state, Player *player,
             return 0;
         }
         player_set_flag(player, FLAG_OPENED_BASEMENT);
-        player_modify_sanity(player, -15);
         printf("The door groans open. Cold air rushes up from the dark below.\n");
         return 1;
     }
@@ -176,7 +173,6 @@ int story_trigger_event(StoryState *state, Player *player,
             return 0;
         }
         player_set_flag(player, FLAG_KNOWS_TRUTH);
-        player_modify_sanity(player, -20);
         printf("The terrible truth clicks into place.\n"
                "Professor Ashwood made a bargain. Lily is the price.\n"
                "But a bargain can be broken – if you are willing to pay.\n");
@@ -192,8 +188,6 @@ int story_trigger_event(StoryState *state, Player *player,
             return 0;
         }
         player_set_flag(player, FLAG_MONSTER_AWARE);
-        player_modify_sanity(player, -10);
-        player_modify_courage(player, 15);
         printf("You study the carvings. The creature has a name – and names\n"
                "are weaknesses. This knowledge is terrifying, but also power.\n");
         return 1;

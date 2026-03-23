@@ -14,10 +14,7 @@ typedef struct {
     int  id;
     char text[DIALOGUE_TEXT_MAX];
     int  next_node_id;
-    int  requires_courage;    /* minimum courage needed          */
     int  requires_item_id;    /* 0 = no item required            */
-    int  sanity_delta;        /* change to sanity when chosen    */
-    int  courage_delta;       /* change to courage when chosen   */
     int  story_flag;          /* flag to set on this choice      */
 } DialogueChoice;
 
@@ -64,10 +61,8 @@ void           dialogue_add_choice(DialogueNode *node,
                                    const DialogueChoice *choice);
 
 /* Console output (for debugging / text mode) */
-void dialogue_print_node(const DialogueNode *node,
-                         int player_courage, int player_item_id);
-int  dialogue_run(DialogueTree *tree, int start_node_id,
-                  int player_courage, int player_item_id);
+void dialogue_print_node(const DialogueNode *node, int player_item_id);
+int  dialogue_run(DialogueTree *tree, int start_node_id, int player_item_id);
 
 /* ── Visual dialogue API ─────────────────────────────────────────────── */
 
@@ -78,12 +73,10 @@ void dialogue_state_init(DialogueState *ds,
 void dialogue_state_update(DialogueState *ds, float dt);
 
 /* Advance to next node (or terminate); returns 0 when dialogue ends. */
-int dialogue_state_advance(DialogueState *ds,
-                           int player_courage, int player_item_id);
+int dialogue_state_advance(DialogueState *ds, int player_item_id);
 
 /* Get the currently selected choice (when text is complete). */
 const DialogueChoice *dialogue_state_get_selected(const DialogueState *ds,
-                                                   int player_courage,
                                                    int player_item_id);
 
 /* Draw the visual dialogue box at the bottom of the screen. */

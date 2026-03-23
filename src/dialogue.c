@@ -55,8 +55,7 @@ void dialogue_add_choice(DialogueNode *node, const DialogueChoice *choice)
 
 /* ── Console (text-mode) helpers ───────────────────────────────────────── */
 
-void dialogue_print_node(const DialogueNode *node,
-                         int player_courage, int player_item_id)
+void dialogue_print_node(const DialogueNode *node, int player_item_id)
 {
     if (!node) return;
     printf("\n%s: \"%s\"\n", node->speaker, node->text);
@@ -66,14 +65,12 @@ void dialogue_print_node(const DialogueNode *node,
     int shown = 0;
     for (int i = 0; i < node->choice_count; i++) {
         const DialogueChoice *c = &node->choices[i];
-        if (c->requires_courage > player_courage)   continue;
         if (c->requires_item_id && c->requires_item_id != player_item_id) continue;
         printf("  [%d] %s\n", ++shown, c->text);
     }
 }
 
-int dialogue_run(DialogueTree *tree, int start_node_id,
-                 int player_courage, int player_item_id)
+int dialogue_run(DialogueTree *tree, int start_node_id, int player_item_id)
 {
     if (!tree) return 0;
 
@@ -84,14 +81,13 @@ int dialogue_run(DialogueTree *tree, int start_node_id,
         DialogueNode *node = dialogue_get_node(tree, current_id);
         if (!node) break;
 
-        dialogue_print_node(node, player_courage, player_item_id);
+        dialogue_print_node(node, player_item_id);
         if (node->is_terminal || node->choice_count == 0) break;
 
         int available[MAX_CHOICES];
         int count = 0;
         for (int i = 0; i < node->choice_count; i++) {
             const DialogueChoice *c = &node->choices[i];
-            if (c->requires_courage > player_courage) continue;
             if (c->requires_item_id && c->requires_item_id != player_item_id) continue;
             available[count++] = i;
         }
@@ -145,8 +141,7 @@ void dialogue_state_update(DialogueState *ds, float dt)
 
 /* Advance to the next node or end the dialogue.
  * Returns 1 if the dialogue should continue, 0 if it ended. */
-int dialogue_state_advance(DialogueState *ds,
-                           int player_courage, int player_item_id)
+int dialogue_state_advance(DialogueState *ds, int player_item_id)
 {
     if (!ds) return 0;
 
@@ -164,12 +159,11 @@ int dialogue_state_advance(DialogueState *ds,
 
     if (node->choice_count == 0) return 0;
 
-    /* Build list of available choices (filtered by requirements). */
+    /* Build list of available choices (filtered by item requirement). */
     int available[MAX_CHOICES];
     int count = 0;
     for (int i = 0; i < node->choice_count; i++) {
         const DialogueChoice *c = &node->choices[i];
-        if (c->requires_courage > player_courage)                   continue;
         if (c->requires_item_id && c->requires_item_id != player_item_id) continue;
         available[count++] = i;
     }
@@ -191,7 +185,6 @@ int dialogue_state_advance(DialogueState *ds,
 
 /* Return the choice that will be taken on the next advance, or NULL. */
 const DialogueChoice *dialogue_state_get_selected(const DialogueState *ds,
-                                                   int player_courage,
                                                    int player_item_id)
 {
     if (!ds || !ds->text_complete) return NULL;
@@ -204,7 +197,6 @@ const DialogueChoice *dialogue_state_get_selected(const DialogueState *ds,
     int count = 0;
     for (int i = 0; i < node->choice_count; i++) {
         const DialogueChoice *c = &node->choices[i];
-        if (c->requires_courage > player_courage)                   continue;
         if (c->requires_item_id && c->requires_item_id != player_item_id) continue;
         available[count++] = i;
     }
@@ -378,8 +370,8 @@ DialogueTree *dialogue_build_for_location(int location_id)
 
     DialogueChoice next = {
         .id=0, .text="...", .next_node_id=99,
-        .requires_courage=0, .requires_item_id=0,
-        .sanity_delta=0, .courage_delta=0, .story_flag=0
+        .requires_item_id=0,
+        .story_flag=0
     };
 
     switch (location_id) {
@@ -407,8 +399,6 @@ DialogueTree *dialogue_build_for_location(int location_id)
         strncpy(next.text, "Stare back at the portrait intently.",
                 DIALOGUE_TEXT_MAX - 1);
         next.next_node_id  = 1;
-        next.sanity_delta  = -5;
-        next.courage_delta = 10;
         next.story_flag    = 0;
         dialogue_add_choice(dialogue_get_node(tree, 0), &next);
 
@@ -416,8 +406,6 @@ DialogueTree *dialogue_build_for_location(int location_id)
         strncpy(next.text, "Look away quickly — this is unsettling.",
                 DIALOGUE_TEXT_MAX - 1);
         next.next_node_id  = 2;
-        next.sanity_delta  = 5;
-        next.courage_delta = -10;
         next.story_flag    = 0;
         dialogue_add_choice(dialogue_get_node(tree, 0), &next);
 
@@ -425,8 +413,6 @@ DialogueTree *dialogue_build_for_location(int location_id)
         strncpy(next.text, "Ignore it and move on.",
                 DIALOGUE_TEXT_MAX - 1);
         next.next_node_id  = 3;
-        next.sanity_delta  = 0;
-        next.courage_delta = 0;
         next.story_flag    = 0;
         dialogue_add_choice(dialogue_get_node(tree, 0), &next);
 

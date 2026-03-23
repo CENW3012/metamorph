@@ -57,66 +57,15 @@ void draw_button(SDL_Renderer *renderer, const Button *button)
 
 /* ── HUD ───────────────────────────────────────────────────────────────── */
 
-void ui_draw_stat_bar(SDL_Renderer *renderer,
-                      int x, int y, int w, int h,
-                      int value, int max_value,
-                      Uint8 r, Uint8 g, Uint8 b,
-                      const char *label)
-{
-    if (!renderer) return;
-
-    /* Background */
-    render_filled_rect(renderer, x, y, w, h, 20, 15, 25, 200);
-    render_rect_outline(renderer, x, y, w, h, 60, 50, 70, 200);
-
-    /* Fill */
-    int fill_w = (max_value > 0) ? (w * value / max_value) : 0;
-    if (fill_w > 0)
-        render_filled_rect(renderer, x+1, y+1, fill_w-2, h-2, r, g, b, 220);
-
-    /* Label */
-    if (label)
-        render_text(renderer, label, x + w + 6, y + (h - 8) / 2, 1, 160, 140, 170);
-}
-
 void ui_draw_hud(SDL_Renderer *renderer, const Player *player)
 {
     if (!renderer || !player) return;
-
-    int bar_x = 14;
-    int bar_y = 14;
-    int bar_w = 120;
-    int bar_h = 12;
-    int bar_gap = 18;
-
-    /* Semi-transparent HUD background */
-    render_filled_rect(renderer, 8, 8, 200, 72, 10, 8, 15, 160);
-    render_rect_outline(renderer, 8, 8, 200, 72, 50, 40, 60, 200);
-
-    /* Health – red */
-    ui_draw_stat_bar(renderer, bar_x, bar_y,
-                     bar_w, bar_h,
-                     player->health, 100,
-                     180, 40, 40, "HP");
-
-    /* Sanity – blue */
-    ui_draw_stat_bar(renderer, bar_x, bar_y + bar_gap,
-                     bar_w, bar_h,
-                     player->sanity, 100,
-                     40, 80, 180, "SN");
-
-    /* Courage – gold */
-    ui_draw_stat_bar(renderer, bar_x, bar_y + bar_gap * 2,
-                     bar_w, bar_h,
-                     player->courage, 100,
-                     180, 150, 30, "CR");
 
     /* Inventory count */
     char inv_text[32];
     snprintf(inv_text, sizeof(inv_text), "Items: %d/%d",
              player->inventory_count, INVENTORY_CAPACITY);
-    render_text(renderer, inv_text, bar_x, bar_y + bar_gap * 3 + 2,
-                1, 140, 120, 150);
+    render_text(renderer, inv_text, 14, 14, 1, 140, 120, 150);
 }
 
 /* ── Interaction prompt ────────────────────────────────────────────────── */
