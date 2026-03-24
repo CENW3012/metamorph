@@ -50,3 +50,11 @@ endif()
 if(UNIX AND NOT APPLE)
     target_link_libraries(horrorgame m)
 endif()
+
+# Copy assets folder to the build output directory after each build
+add_custom_command(TARGET horrorgame POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/assets"
+        "$<TARGET_FILE_DIR:horrorgame>/assets"
+    COMMENT "Copying assets to build directory"
+)
