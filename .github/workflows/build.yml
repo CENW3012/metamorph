@@ -42,6 +42,7 @@ jobs:
           New-Item -ItemType Directory -Path dist
           Copy-Item "build\Release\horrorgame.exe" dist\
           Copy-Item "SDL3-${{ env.SDL3_VERSION }}\lib\x64\SDL3.dll" dist\
+          Copy-Item -Recurse "assets" dist\assets
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -65,9 +66,15 @@ jobs:
       - name: Build
         run: cmake --build build
 
+      - name: Stage artifacts
+        run: |
+          mkdir dist
+          cp build/horrorgame dist/
+          cp -r assets dist/assets
+
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: horrorgame-macos
-          path: build/horrorgame
+          path: dist/
 
