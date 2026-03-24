@@ -86,12 +86,27 @@ void game_start_new(Game *game)
     game->world  = world_create();
     game->story  = story_create();
 
-    /* Load player sprite */
-    SDL_Texture *player_sprite = render_load_texture(game->renderer,
-                                                     "assets/player_walk.png");
-    if (player_sprite) {
-        player_set_sprite(game->player, player_sprite, 64, 96);
-    }
+    /* Load idle animations from assets/player/ */
+    game->player->idle_texture_north = render_load_texture(game->renderer, "assets/player/player_idle_north.png");
+    game->player->idle_texture_south = render_load_texture(game->renderer, "assets/player/player_idle_south.png");
+    game->player->idle_texture_east  = render_load_texture(game->renderer, "assets/player/player_idle_east.png");
+    game->player->idle_texture_west  = render_load_texture(game->renderer, "assets/player/player_idle_west.png");
+
+    /* Load walking animations from assets/player/ */
+    game->player->walk_frames_north[0] = render_load_texture(game->renderer, "assets/player/player_walk_north_0.png");
+    game->player->walk_frames_north[1] = render_load_texture(game->renderer, "assets/player/player_walk_north_1.png");
+    game->player->walk_frames_south[0] = render_load_texture(game->renderer, "assets/player/player_walk_south_0.png");
+    game->player->walk_frames_south[1] = render_load_texture(game->renderer, "assets/player/player_walk_south_1.png");
+    game->player->walk_frames_east[0]  = render_load_texture(game->renderer, "assets/player/player_walk_east_0.png");
+    game->player->walk_frames_east[1]  = render_load_texture(game->renderer, "assets/player/player_walk_east_1.png");
+    game->player->walk_frames_west[0]  = render_load_texture(game->renderer, "assets/player/player_walk_west_0.png");
+    game->player->walk_frames_west[1]  = render_load_texture(game->renderer, "assets/player/player_walk_west_1.png");
+
+    /* Initialize animation state */
+    game->player->current_direction = DIRECTION_EAST;  /* Start facing east */
+    game->player->frame_index       = 0;
+    game->player->frame_timer       = 0.0f;
+    game->player->frame_duration    = 0.15f;
 
     story_populate_world(game->world, "assets/locations.txt");
     world_setup_rooms(game->world);
@@ -465,31 +480,26 @@ void game_update(Game *game)
         p->is_moving_backwards = 0;
 
         if (game->keys[SDL_SCANCODE_A] || game->keys[SDL_SCANCODE_LEFT]) {
-            p->vx = -PLAYER_SPEED; p->facing_right = 0; p->is_moving = 1;
+            p->vx = -PLAYER_SPEED; p->facing_right = 0;
         }
-        if (game->keys[SDL_SCANCODE_D] || game->keys[SDL_SCANCODE_RIGHT]) {
-            p->vx = +PLAYER_SPEED; p->facing_right = 1; p->is_moving = 1;
+        else if (game->keys[SDL_SCANCODE_D] || game->keys[SDL_SCANCODE_RIGHT]) {
+            p->vx = +PLAYER_SPEED; p->facing_right = 1;
         }
-        if (game->keys[SDL_SCANCODE_W] || game->keys[SDL_SCANCODE_UP])
-            p->vy = -PLAYER_SPEED * 0.3f;
-        if (game->keys[SDL_SCANCODE_S] || game->keys[SDL_SCANCODE_DOWN])
-            p->vy = +PLAYER_SPEED * 0.3f;
+        else if (game->keys[SDL_SCANCODE_W] || game->keys[SDL_SCANCODE_UP]) {
+            p->vy = -PLAYER_SPEED;  // CHANGED: Remove the * 0.3f
+        }
+        else if (game->keys[SDL_SCANCODE_S] || game->keys[SDL_SCANCODE_DOWN]) {
+            p->vy = +PLAYER_SPEED;  // CHANGED: Remove the * 0.3f
+        }
 
+        /* Set is_moving if any velocity is applied */
+        p->is_moving = (p->vx != 0.0f || p->vy != 0.0f) ? 1 : 0;
+        
         /* ── Apply movement ── */
         p->x += p->vx * dt;
         p->y += p->vy * dt;
 
-        /* ── Floor clamp (allow full vertical movement) ── */
-        float floor_min = 30.0f;
-        float floor_max = (float)(ROOM_H - 30);
-        if (p->y < floor_min) p->y = floor_min;
-        if (p->y > floor_max) p->y = floor_max;
-
-        /* ── Room bounds ── */
         float half_w = (float)PLAYER_W / 2.0f;
-        if (p->x < half_w + 42.0f) p->x = half_w + 42.0f;
-        if (p->x > (float)(ROOM_W - (int)half_w - 42))
-            p->x = (float)(ROOM_W - (int)half_w - 42);
 
         /* ── Collision with room colliders ── */
         if (loc) {
@@ -610,9 +620,10 @@ void game_render_menu(Game *game)
         // Then draw your menu buttons on top
         // ... existing menu button code ...
     }
-    render_text_centered(r, "MetaMorph",
+
+    render_text_centered(r, "Metamorph",
                          WINDOW_W/2, 110, 4, 190, 150, 220);
-    render_text_centered(r, "Like how a worm become a butterfly",
+    render_text_centered(r, "Low Cortisol Game",
                          WINDOW_W/2, 165, 2, 110, 85, 135);
     render_filled_rect(r, WINDOW_W/2 - 150, 196, 300, 2, 70,45,90,180);
 
