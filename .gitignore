@@ -14,8 +14,6 @@ CPackSourceConfig.cmake
 _CPack_Packages/
 
 # Compiled binaries
-paper_lily
-paper_lily.exe
 horrorgame
 horrorgame.exe
 *.o

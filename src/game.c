@@ -40,7 +40,7 @@ Game *game_init(SDL_Window *window, SDL_Renderer *renderer)
     float bw = 240.0f, bh = 54.0f;
     float bx = (WINDOW_W - bw) / 2.0f;
     g->buttons[0] = make_button(60.0f, 500.0f, bw, bh, "New Game");
-    g->buttons[1] = make_button(60.0f, 500.0f + (bh + 10.0f), bw, bh, "Load Game");
+    g->buttons[1] = make_button(60.0f, 500.0f + (bh + 10.0f), bw, bh, "Settings");
     g->buttons[2] = make_button(60.0f, 500.0f + 2.0f * (bh + 10.0f), bw, bh, "Quit");
     g->pause_buttons[0] = make_button(bx, 310.0f, bw, bh, "Resume");
     g->pause_buttons[1] = make_button(bx, 380.0f, bw, bh, "Quit to Menu");
