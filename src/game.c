@@ -40,10 +40,22 @@ Game *game_init(SDL_Window *window, SDL_Renderer *renderer)
     float bw = 240.0f, bh = 54.0f;
     float bx = (WINDOW_W - bw) / 2.0f;
     g->buttons[0] = make_button(60.0f, 500.0f, bw, bh, "New Game");
-    g->buttons[1] = make_button(60.0f, 500.0f + (bh + 10.0f), bw, bh, "Load Game");
+    g->buttons[1] = make_button(60.0f, 500.0f + (bh + 10.0f), bw, bh, "Settings");
     g->buttons[2] = make_button(60.0f, 500.0f + 2.0f * (bh + 10.0f), bw, bh, "Quit");
     g->pause_buttons[0] = make_button(bx, 310.0f, bw, bh, "Resume");
     g->pause_buttons[1] = make_button(bx, 380.0f, bw, bh, "Quit to Menu");
+
+    /* Settings defaults */
+    g->volume     = 100.0f;
+    g->brightness = 100.0f;
+    g->settings_focus = 0;
+    float sw = 400.0f, sh = 24.0f;
+    float sx = (WINDOW_W - sw) / 2.0f + 60.0f;   /* offset right to leave room for label */
+    slider_init(&g->settings_volume_slider,     sx, 300.0f, sw, sh, 0.0f, 100.0f, 100.0f);
+    slider_init(&g->settings_brightness_slider, sx, 380.0f, sw, sh, 0.0f, 100.0f, 100.0f);
+    float bbw = 200.0f, bbh = 48.0f;
+    g->settings_back_button = make_button(
+        (WINDOW_W - bbw) / 2.0f, 460.0f, bbw, bbh, "Back");
 
     g->last_ticks = SDL_GetTicks();
     g->keys       = SDL_GetKeyboardState(NULL);
@@ -323,6 +335,7 @@ void game_handle_event(Game *game, SDL_Event *event)
                 if (button_is_clicked(&game->buttons[i],
                                       game->mouse_x, game->mouse_y)) {
                     if      (i == 0) game_start_new(game);
+                    else if (i == 1) game->state = GAME_STATE_SETTINGS;
                     else if (i == 2) game->state = GAME_STATE_QUIT;
                 }
             }
@@ -338,8 +351,9 @@ void game_handle_event(Game *game, SDL_Event *event)
                     game->current_menu_choice++;
                 break;
             case SDLK_RETURN:
-                if (game->current_menu_choice == 0) game_start_new(game);
-                if (game->current_menu_choice == 2) game->state = GAME_STATE_QUIT;
+                if      (game->current_menu_choice == 0) game_start_new(game);
+                else if (game->current_menu_choice == 1) game->state = GAME_STATE_SETTINGS;
+                else if (game->current_menu_choice == 2) game->state = GAME_STATE_QUIT;
                 break;
             default: break;
             }
@@ -439,6 +453,66 @@ void game_handle_event(Game *game, SDL_Event *event)
             if (button_is_clicked(&game->pause_buttons[1],
                                   game->mouse_x, game->mouse_y)) {
                 game->state = GAME_STATE_MENU;
+            }
+        }
+        break;
+
+    case GAME_STATE_SETTINGS:
+        button_update_hover(&game->settings_back_button,
+                            game->mouse_x, game->mouse_y);
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            switch (event->key.key) {
+            case SDLK_ESCAPE:
+                game->state = GAME_STATE_MENU;
+                break;
+            case SDLK_UP:
+                if (game->settings_focus > 0) game->settings_focus--;
+                break;
+            case SDLK_DOWN:
+                if (game->settings_focus < 1) game->settings_focus++;
+                break;
+            case SDLK_LEFT:
+                if (game->settings_focus == 0) {
+                    slider_set_value(&game->settings_volume_slider,
+                        game->settings_volume_slider.value - 5.0f);
+                    game->volume = game->settings_volume_slider.value;
+                } else {
+                    slider_set_value(&game->settings_brightness_slider,
+                        game->settings_brightness_slider.value - 5.0f);
+                    game->brightness = game->settings_brightness_slider.value;
+                }
+                break;
+            case SDLK_RIGHT:
+                if (game->settings_focus == 0) {
+                    slider_set_value(&game->settings_volume_slider,
+                        game->settings_volume_slider.value + 5.0f);
+                    game->volume = game->settings_volume_slider.value;
+                } else {
+                    slider_set_value(&game->settings_brightness_slider,
+                        game->settings_brightness_slider.value + 5.0f);
+                    game->brightness = game->settings_brightness_slider.value;
+                }
+                break;
+            case SDLK_RETURN:
+                game->state = GAME_STATE_MENU;
+                break;
+            default: break;
+            }
+        }
+        if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+            if (button_is_clicked(&game->settings_back_button,
+                                  game->mouse_x, game->mouse_y)) {
+                game->state = GAME_STATE_MENU;
+            }
+            if (slider_handle_click(&game->settings_volume_slider,
+                                    game->mouse_x, game->mouse_y)) {
+                game->volume = game->settings_volume_slider.value;
+                game->settings_focus = 0;
+            }
+            if (slider_handle_click(&game->settings_brightness_slider,
+                                    game->mouse_x, game->mouse_y)) {
+                game->brightness = game->settings_brightness_slider.value;
+                game->settings_focus = 1;
             }
         }
         break;
@@ -586,6 +660,7 @@ void game_render(Game *game)
     if (!game) return;
     switch (game->state) {
     case GAME_STATE_MENU:      game_render_menu(game);      break;
+    case GAME_STATE_SETTINGS:  game_render_settings(game);  break;
     case GAME_STATE_PLAYING:   game_render_playing(game);   break;
     case GAME_STATE_DIALOGUE:
         game_render_playing(game);
@@ -598,6 +673,16 @@ void game_render(Game *game)
         break;
     case GAME_STATE_ENDING:    game_render_ending(game);    break;
     default: break;
+    }
+
+    /* Apply brightness: draw a black overlay when brightness < 100
+     * (skipped in settings so sliders remain visible at all brightness levels)
+     * Alpha is capped at 220 rather than 255 so some scene detail is still
+     * visible even at the minimum brightness setting. */
+    if (game->brightness < 100.0f && game->state != GAME_STATE_SETTINGS) {
+        Uint8 alpha = (Uint8)((1.0f - game->brightness / 100.0f) * 220.0f);
+        render_filled_rect(game->renderer, 0, 0, WINDOW_W, WINDOW_H,
+                           0, 0, 0, alpha);
     }
 }
 
@@ -861,4 +946,47 @@ void game_render_ending(Game *game)
             render_text_centered(r, "[ Press any key to continue ]",
                                  WINDOW_W/2, WINDOW_H-56, 1, 90,72,110);
     }
+}
+
+/* ── Settings ────────────────────────────────────────────────────────────── */
+
+void game_render_settings(Game *game)
+{
+    if (!game) return;
+    SDL_Renderer *r = game->renderer;
+
+    /* Background: reuse title screen or solid black fallback */
+    if (game->title_screen_texture) {
+        render_texture(r, game->title_screen_texture, 0, 0, WINDOW_W, WINDOW_H);
+    } else {
+        render_filled_rect(r, 0, 0, WINDOW_W, WINDOW_H, 0, 0, 0, 255);
+    }
+    render_filled_rect(r, 0, 0, WINDOW_W, WINDOW_H, 0, 0, 0, 160);
+
+    /* Panel */
+    int pw = 680, ph = 340;
+    int px = (WINDOW_W - pw) / 2, py = 170;
+    render_filled_rect(r, px, py, pw, ph, 15, 10, 25, 230);
+    render_rect_outline(r, px, py, pw, ph, 80, 60, 100, 255);
+    render_rect_outline(r, px+2, py+2, pw-4, ph-4, 45, 33, 62, 180);
+
+    /* Title */
+    render_text_centered(r, "SETTINGS", WINDOW_W/2, py + 20, 3, 175, 145, 200);
+    render_filled_rect(r, px+18, py+54, pw-36, 2, 55, 42, 70, 190);
+
+    /* Update focused state on sliders before rendering */
+    game->settings_volume_slider.focused     = (game->settings_focus == 0);
+    game->settings_brightness_slider.focused = (game->settings_focus == 1);
+
+    /* Sliders */
+    slider_render(r, &game->settings_volume_slider,     "Volume");
+    slider_render(r, &game->settings_brightness_slider, "Brightness");
+
+    /* Back button */
+    draw_button_menu(r, &game->settings_back_button);
+
+    /* Instructions */
+    render_text_centered(r,
+        "UP/DOWN: select  |  LEFT/RIGHT: adjust  |  ESC: back",
+        WINDOW_W/2, WINDOW_H - 28, 1, 65, 50, 78);
 }
