@@ -35,13 +35,13 @@ void draw_button(SDL_Renderer *renderer, const Button *button)
 
     /* Body */
     if (button->is_hovered)
-        render_filled_rect(renderer, x, y, w, h, 80, 50, 90, 240);
+        render_filled_rect(renderer, x, y, w, h, 90, 20, 20, 240);
     else
-        render_filled_rect(renderer, x, y, w, h, 35, 25, 45, 230);
+        render_filled_rect(renderer, x, y, w, h, 45, 10, 10, 230);
 
     /* Border */
-    render_rect_outline(renderer, x,   y,   w,   h,   120,80,140,255);
-    render_rect_outline(renderer, x+2, y+2, w-4, h-4,  60,40,80, 180);
+    render_rect_outline(renderer, x,   y,   w,   h,   140,30,30,255);
+    render_rect_outline(renderer, x+2, y+2, w-4, h-4,  70,15,15, 180);
 
     /* Text */
     if (button->text) {
@@ -49,9 +49,9 @@ void draw_button(SDL_Renderer *renderer, const Button *button)
         int tx = x + (w - tw) / 2;
         int ty = y + (h - 16) / 2;
         if (button->is_hovered)
-            render_text(renderer, button->text, tx, ty, 2, 255, 220, 255);
+            render_text(renderer, button->text, tx, ty, 2, 255, 220, 220);
         else
-            render_text(renderer, button->text, tx, ty, 2, 180, 150, 200);
+            render_text(renderer, button->text, tx, ty, 2, 200, 130, 130);
     }
 }
 void draw_button_menu(SDL_Renderer *renderer, const Button *button)
@@ -71,16 +71,16 @@ void draw_button_menu(SDL_Renderer *renderer, const Button *button)
         render_filled_rect(renderer, x + 4, y + h + 2, w, 8, 0, 0, 0, 80);  /* shadow */
     }
 
-    /* Text (black on hover, light purple when not) */
+    /* Text (red on hover, light red when not) */
     if (button->text) {
         int tw = render_text_width(button->text, 2);
         int tx = x + (w - tw) / 2;
         int ty = y + (h - 16) / 2;
 
         if (button->is_hovered)
-            render_text(renderer, button->text, tx, ty, 2, 255, 0, 0);      /* black text on hover */
+            render_text(renderer, button->text, tx, ty, 2, 255, 0, 0);      /* bright red text on hover */
         else
-            render_text(renderer, button->text, tx, ty, 2, 200, 190, 210); /* light purple */
+            render_text(renderer, button->text, tx, ty, 2, 210, 160, 160); /* light red */
     }
 }
 /* ── Slider ────────────────────────────────────────────────────────────── */
@@ -131,17 +131,17 @@ void slider_render(SDL_Renderer *r, const Slider *s, const char *label)
         int lx = x - lw - 20;
         int ly = y + (h - 16) / 2;
         if (s->focused)
-            render_text(r, label, lx, ly, 2, 230, 200, 255);
+            render_text(r, label, lx, ly, 2, 255, 190, 190);
         else
-            render_text(r, label, lx, ly, 2, 160, 140, 180);
+            render_text(r, label, lx, ly, 2, 180, 110, 110);
     }
 
     /* Track background */
-    render_filled_rect(r, x, y, w, h, 30, 22, 45, 200);
+    render_filled_rect(r, x, y, w, h, 40, 10, 10, 200);
     render_rect_outline(r, x, y, w, h,
-        s->focused ? 140 : 80,
-        s->focused ? 100 : 55,
         s->focused ? 170 : 105,
+        s->focused ?  40 :  25,
+        s->focused ?  40 :  25,
         200);
 
     /* Filled portion */
@@ -149,9 +149,9 @@ void slider_render(SDL_Renderer *r, const Slider *s, const char *label)
     int filled_w = (int)(w * t);
     if (filled_w > 0) {
         render_filled_rect(r, x, y, filled_w, h,
-            s->focused ? 120 : 80,
-            s->focused ?  85 : 55,
             s->focused ? 155 : 110,
+            s->focused ?  35 :  25,
+            s->focused ?  35 :  25,
             220);
     }
 
@@ -160,18 +160,18 @@ void slider_render(SDL_Renderer *r, const Slider *s, const char *label)
     if (handle_x < x) handle_x = x;
     if (handle_x > x + w - 12) handle_x = x + w - 12;
     render_filled_rect(r, handle_x, y - 4, 12, h + 8,
-        s->focused ? 220 : 160,
-        s->focused ? 190 : 130,
         s->focused ? 255 : 185,
+        s->focused ? 150 :  90,
+        s->focused ? 150 :  90,
         255);
 
     /* Value text (right of the track) */
     char val_buf[16];
     snprintf(val_buf, sizeof(val_buf), "%d", (int)s->value);
     render_text(r, val_buf, x + w + 16, y + (h - 16) / 2, 2,
-        s->focused ? 230 : 170,
-        s->focused ? 200 : 150,
-        s->focused ? 255 : 195);
+        s->focused ? 255 : 195,
+        s->focused ? 190 : 115,
+        s->focused ? 190 : 115);
 }
 
 /* ── HUD ───────────────────────────────────────────────────────────────── */
@@ -184,7 +184,7 @@ void ui_draw_hud(SDL_Renderer *renderer, const Player *player)
     char inv_text[32];
     snprintf(inv_text, sizeof(inv_text), "Items: %d/%d",
              player->inventory_count, INVENTORY_CAPACITY);
-    render_text(renderer, inv_text, 14, 14, 1, 140, 120, 150);
+    render_text(renderer, inv_text, 14, 14, 1, 150, 90, 90);
 }
 
 /* ── Interaction prompt ────────────────────────────────────────────────── */
@@ -202,8 +202,8 @@ void ui_draw_interact_prompt(SDL_Renderer *renderer,
     int ty = screen_y - 30;
 
     /* Background */
-    render_filled_rect(renderer, tx - 6, ty - 4, tw + 12, 20, 20,15,30, 200);
-    render_rect_outline(renderer, tx - 6, ty - 4, tw + 12, 20, 80,60,100, 220);
+    render_filled_rect(renderer, tx - 6, ty - 4, tw + 12, 20, 30,8,8, 200);
+    render_rect_outline(renderer, tx - 6, ty - 4, tw + 12, 20, 110,25,25, 220);
 
-    render_text(renderer, buf, tx, ty, 1, 220, 200, 255);
+    render_text(renderer, buf, tx, ty, 1, 255, 195, 195);
 }
