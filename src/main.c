@@ -1,36 +1,9 @@
 #include <SDL3/SDL.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "game.h"
 
 int main(int argc, char *argv[])
 {
     (void)argc; (void)argv;
-
-    // Debug: Print current working directory
-    char cwd[1024];
-    if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        SDL_Log("Current working directory: %s", cwd);
-    }
-
-    // Debug: Check if assets folder exists
-    FILE *test = fopen("assets/locations.txt", "r");
-    if (test) {
-        SDL_Log("✓ Found assets/locations.txt");
-        fclose(test);
-    } else {
-        SDL_Log("✗ ERROR: Cannot find assets/locations.txt in: %s", cwd);
-    }
-
-    // Debug: Check for PNG files
-    test = fopen("assets/title_screen.png", "r");
-    if (test) {
-        SDL_Log("✓ Found assets/title_screen.png");
-        fclose(test);
-    } else {
-        SDL_Log("✗ ERROR: Cannot find assets/title_screen.png");
-    }
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("SDL_Init failed: %s", SDL_GetError());
@@ -54,6 +27,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    /* Enable alpha blending globally. */
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     Game *game = game_init(window, renderer);
@@ -65,6 +39,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    /* ── Main loop ─────────────────────────────────────────────────────── */
     while (game->running && game->state != GAME_STATE_QUIT) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -73,14 +48,16 @@ int main(int argc, char *argv[])
             game_handle_event(game, &event);
         }
 
+        /* Clear */
         SDL_SetRenderDrawColor(renderer, 8, 6, 12, 255);
         SDL_RenderClear(renderer);
 
+        /* Update + render */
         game_update(game);
         game_render(game);
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        SDL_Delay(16); /* ~60 FPS cap */
     }
 
     game_cleanup(game);
@@ -89,3 +66,4 @@ int main(int argc, char *argv[])
     SDL_Quit();
     return 0;
 }
+
