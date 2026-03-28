@@ -1,16 +1,19 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "game.h"
+
+#ifdef __APPLE__
 #include <unistd.h>
 #include <libgen.h>
 #include <limits.h>
-#include "game.h"
+#endif
 
 int main(int argc, char *argv[])
 {
     (void)argc;
 
-    /* ── Change to executable directory so assets/ is found ────────────── */
+    /* ── Change to executable directory so assets/ is found (macOS only) ─ */
     #ifdef __APPLE__
     {
         char exe_path[PATH_MAX];
