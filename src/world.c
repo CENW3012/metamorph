@@ -199,8 +199,8 @@ void world_setup_rooms(World *world, SDL_Renderer *renderer)
 
         /* ── 0: Entrance Hall ───────────────────────────────────────── */
             case 0: {
-                loc->spawn_x = (float)(ROOM_W / 3);
-                loc->spawn_y = (float)(ROOM_H / 3);
+                loc->spawn_x = 500.0f;    // X coordinate in pixels
+                loc->spawn_y = 400.0f;    // Y coordinate in pixels
 
                 loc->background_texture = render_load_texture(
                     renderer, "assets/room/room1.png");
