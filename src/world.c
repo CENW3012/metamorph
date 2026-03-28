@@ -1,4 +1,5 @@
 #include "world.h"
+#include "map.h"
 #include "utils.h"
 #include "render.h"
 
@@ -199,12 +200,31 @@ void world_setup_rooms(World *world, SDL_Renderer *renderer)
 
         /* ── 0: Entrance Hall ───────────────────────────────────────── */
             case 0: {
-                loc->spawn_x = (float)(ROOM_W / 3);
-                loc->spawn_y = (float)(ROOM_H / 3);
+                loc->spawn_x = 500.0f;    // X coordinate in pixels
+                loc->spawn_y = 400.0f;    // Y coordinate in pixels
 
                 loc->background_texture = render_load_texture(
                     renderer, "assets/room/room1.png");
-                
+
+                /* Load tile map and build collision from the CSV. */
+                Map *m = map_load_csv("maps/Archive room logic.csv");
+                if (m) {
+                    map_build_colliders(m, loc);
+
+                    /* Place the player in a central floor tile. */
+                    float sx = (float)(ROOM_W / 2);
+                    float sy = (float)(ROOM_H / 2);
+                    map_find_spawn(m, m->rows / 2, m->cols / 2, &sx, &sy);
+                    loc->spawn_x = sx;
+                    loc->spawn_y = sy;
+
+                    map_free(m);
+                } else {
+                    /* Fallback spawn if CSV is missing. */
+                    loc->spawn_x = (float)(ROOM_W / 2);
+                    loc->spawn_y = (float)(ROOM_H / 2);
+                }
+
                 break;
             }
 
@@ -292,7 +312,14 @@ void world_render_room(const Location *loc, SDL_Renderer *renderer,
             (Uint8)(d->b > 30 ? d->b - 30 : 0),
             200);
     }
-
+    /* ── Collision boxes (debug visualization) ── */
+    for (int i = 0; i < loc->collider_count; i++) {
+        const Rect *col = &loc->colliders[i];
+        render_rect_outline(renderer,
+            (int)(col->x - cx), (int)(col->y - cy),
+            (int)col->w, (int)col->h,
+            255, 0, 0, 255);  /* Red outline */
+    }
     /* ── Danger zone vignette ── */
     if (loc->is_danger_zone) {
         /* Red border on all four edges */
