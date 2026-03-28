@@ -16,9 +16,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1
-
       - name: Install SDL3 with vcpkg
         run: |
           git clone https://github.com/Microsoft/vcpkg.git
@@ -31,34 +28,158 @@ jobs:
         run: mkdir build
 
       - name: Configure with CMake
+        shell: bash
         run: |
           cd build
-          cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake ..
+          cmake -G "Visual Studio 17 2022" -A x64 \
+            -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake ..
 
       - name: Build Release
         run: |
           cd build
           cmake --build . --config Release
 
-      - name: Copy assets to build output
-        run: |
-          xcopy assets build\Release\assets /E /I /Y
-          xcopy scripts build\Release\scripts /E /I /Y
-
       - name: Copy SDL3 DLLs
+        shell: bash
         run: |
-          copy vcpkg\installed\x64-windows\bin\SDL3.dll build\Release\
-          copy vcpkg\installed\x64-windows\bin\SDL3_image.dll build\Release\
+          cp vcpkg/installed/x64-windows/bin/SDL3.dll build/Release/ || true
+          cp vcpkg/installed/x64-windows/bin/SDL3_image.dll build/Release/ || true
+
+      - name: Create release package
+        shell: bash
+        run: |
+          cd build/Release
+          7z a ../../horrorgame-windows.zip .
+          cd ../..
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: horrorgame-windows
+          path: horrorgame-windows.zip
+
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            name: apple-silicon
+          - arch: x86_64
+            name: intel
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install SDL3 (macOS)
+        run: |
+          brew install sdl3 sdl3-image cmake
+
+      - name: Create build directory
+        run: mkdir build
+
+      - name: Configure with CMake
+        run: |
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release \
+                 -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} ..
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build . --config Release
+
+      - name: Create macOS app bundle
+        run: |
+          mkdir -p horrorgame.app/Contents/MacOS
+          mkdir -p horrorgame.app/Contents/Resources
+          cp build/horrorgame horrorgame.app/Contents/MacOS/
+          cp -r assets horrorgame.app/Contents/Resources/
+          
+          # Create Info.plist
+          cat > horrorgame.app/Contents/Info.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleName</key>
+              <string>Metamorph</string>
+              <key>CFBundleVersion</key>
+              <string>1.0</string>
+              <key>CFBundleExecutable</key>
+              <string>horrorgame</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.russellchr.metamorph</string>
+          </dict>
+          </plist>
+          EOF
 
       - name: Create release package
         run: |
-          cd build\Release
-          7z a ../../horrorgame-windows.zip *
+          zip -r horrorgame-macos-${{ matrix.name }}.zip horrorgame.app
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: horrorgame-macos-${{ matrix.name }}
+          path: horrorgame-macos-${{ matrix.name }}.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential \
+            libsdl3-dev libsdl3-image-dev
+
+      - name: Create build directory
+        run: mkdir build
+
+      - name: Configure with CMake
+        run: |
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build .
+
+      - name: Create release package
+        run: |
+          mkdir -p horrorgame-linux
+          cp build/horrorgame horrorgame-linux/
+          cp -r assets horrorgame-linux/
+          zip -r horrorgame-linux.zip horrorgame-linux
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: horrorgame-linux
+          path: horrorgame-linux.zip
+
+  create-release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
 
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: horrorgame-windows.zip
+          files: |
+            horrorgame-windows/horrorgame-windows.zip
+            horrorgame-macos-apple-silicon/horrorgame-macos-apple-silicon.zip
+            horrorgame-macos-intel/horrorgame-macos-intel.zip
+            horrorgame-linux/horrorgame-linux.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
