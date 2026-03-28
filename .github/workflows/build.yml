@@ -39,18 +39,29 @@ jobs:
           cd build
           cmake --build . --config Release
 
-      - name: Copy SDL3 DLLs
+      - name: List build output
         shell: bash
         run: |
-          cp vcpkg/installed/x64-windows/bin/SDL3.dll build/Release/ || true
-          cp vcpkg/installed/x64-windows/bin/SDL3_image.dll build/Release/ || true
+          find build -type f -name "*.dll" -o -name "*.exe"
+
+      - name: Prepare Windows package
+        shell: bash
+        run: |
+          mkdir -p horrorgame-windows
+          cp build/Release/horrorgame.exe horrorgame-windows/ || cp build/horrorgame.exe horrorgame-windows/
+          cp -r assets horrorgame-windows/ || echo "Assets not found, continuing..."
+          
+          # Try to find and copy SDL3 DLLs
+          find vcpkg/installed -name "SDL3.dll" -exec cp {} horrorgame-windows/ \; 2>/dev/null || true
+          find vcpkg/installed -name "SDL3_image.dll" -exec cp {} horrorgame-windows/ \; 2>/dev/null || true
+          
+          # List what we copied
+          ls -la horrorgame-windows/
 
       - name: Create release package
         shell: bash
         run: |
-          cd build/Release
-          7z a ../../horrorgame-windows.zip .
-          cd ../..
+          7z a horrorgame-windows.zip horrorgame-windows/
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v3
@@ -90,12 +101,22 @@ jobs:
           cd build
           cmake --build . --config Release
 
+      - name: List build output
+        run: |
+          ls -la build/
+          file build/horrorgame || echo "Executable not found"
+
       - name: Create macOS app bundle
         run: |
           mkdir -p horrorgame.app/Contents/MacOS
           mkdir -p horrorgame.app/Contents/Resources
-          cp build/horrorgame horrorgame.app/Contents/MacOS/
-          cp -r assets horrorgame.app/Contents/Resources/
+          
+          # Copy executable
+          cp build/horrorgame horrorgame.app/Contents/MacOS/ || exit 1
+          chmod +x horrorgame.app/Contents/MacOS/horrorgame
+          
+          # Copy assets
+          cp -r assets horrorgame.app/Contents/Resources/ || echo "Assets folder not found"
           
           # Create Info.plist
           cat > horrorgame.app/Contents/Info.plist << 'EOF'
@@ -106,18 +127,30 @@ jobs:
               <key>CFBundleName</key>
               <string>Metamorph</string>
               <key>CFBundleVersion</key>
-              <string>1.0</string>
+              <string>1.0.0</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0.0</string>
               <key>CFBundleExecutable</key>
               <string>horrorgame</string>
               <key>CFBundleIdentifier</key>
               <string>com.russellchr.metamorph</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
           </dict>
           </plist>
           EOF
+          
+          cat horrorgame.app/Contents/Info.plist
+
+      - name: Verify app bundle
+        run: |
+          ls -la horrorgame.app/Contents/MacOS/
+          ls -la horrorgame.app/Contents/Resources/ || echo "Resources empty"
 
       - name: Create release package
         run: |
-          zip -r horrorgame-macos-${{ matrix.name }}.zip horrorgame.app
+          zip -r horrorgame-macos-${{ matrix.name }}.zip horrorgame.app/
+          ls -lh horrorgame-macos-${{ matrix.name }}.zip
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v3
@@ -151,12 +184,19 @@ jobs:
           cd build
           cmake --build .
 
+      - name: List build output
+        run: |
+          ls -la build/
+          file build/horrorgame || echo "Executable not found"
+
       - name: Create release package
         run: |
           mkdir -p horrorgame-linux
           cp build/horrorgame horrorgame-linux/
-          cp -r assets horrorgame-linux/
-          zip -r horrorgame-linux.zip horrorgame-linux
+          chmod +x horrorgame-linux/horrorgame
+          cp -r assets horrorgame-linux/ || echo "Assets not found"
+          zip -r horrorgame-linux.zip horrorgame-linux/
+          ls -lh horrorgame-linux.zip
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v3
@@ -181,5 +221,7 @@ jobs:
             horrorgame-macos-apple-silicon/horrorgame-macos-apple-silicon.zip
             horrorgame-macos-intel/horrorgame-macos-intel.zip
             horrorgame-linux/horrorgame-linux.zip
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
