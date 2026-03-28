@@ -10,6 +10,7 @@
 #include "story.h"
 #include "ui.h"
 #include "npc.h"
+#include "monologue.h"
 
 /* ── Game states ──────────────────────────────────────────────────────── */
 
@@ -41,6 +42,9 @@ typedef struct {
     DialogueTree  *dialogue_tree;   /* current NPC dialogue tree    */
     DialogueState  dialogue_state;  /* visual dialogue playback     */
     NPCManager    *npc_manager;     /* NPC system                   */
+
+    /* Inner monologue data loaded from assets/dialogue/monologues.txt */
+    MonologueFile  monologue_file;
 
     /* Camera */
     Camera camera;

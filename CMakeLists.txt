@@ -30,6 +30,7 @@ add_executable(horrorgame
     src/player.c
     src/world.c
     src/dialogue.c
+    src/monologue.c
     src/story.c
     src/utils.c
     src/render.c

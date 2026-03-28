@@ -3,6 +3,7 @@
 #include "world.h"
 #include "story.h"
 #include "dialogue.h"
+#include "monologue.h"
 #include "ui.h"
 #include "render.h"
 #include "camera.h"
@@ -62,6 +63,9 @@ Game *game_init(SDL_Window *window, SDL_Renderer *renderer)
 
     /* Load the dialogue box background image */
     dialogue_load_texture(&g->dialogue_state, renderer, "assets/dialogue.png");
+
+    /* Load inner monologue file */
+    monologue_load(&g->monologue_file, "assets/dialogue/monologues.txt");
 
     /* Load inventory UI textures */
     g->inventory_bg_texture   = render_load_texture(renderer,
@@ -139,6 +143,15 @@ void game_start_new(Game *game)
     game->selected_inventory_slot = 0;
     game->ending_type             = 0;
     game->ending_timer            = 0.0f;
+
+    /* Show the opening inner monologue if one is defined */
+    const MonologueSection *open_mono =
+        monologue_find(&game->monologue_file, "game_start");
+    if (open_mono) {
+        game->dialogue_tree = monologue_to_dialogue_tree(open_mono);
+        if (game->dialogue_tree)
+            game_start_dialogue(game, 0);
+    }
 }
 
 void game_change_location(Game *game, int location_id,
@@ -204,6 +217,23 @@ static void apply_dialogue_choice_flag(Game *game)
         game->player->flags |= (uint32_t)ch->story_flag;
 }
 
+/* Set game->dialogue_tree: try the named monologue section first; fall back
+ * to the location-based procedural tree when no monologue is found. */
+static void set_dialogue_tree(Game *game,
+                               const char *monologue_id,
+                               int fallback_location_id)
+{
+    if (monologue_id) {
+        const MonologueSection *ms =
+            monologue_find(&game->monologue_file, monologue_id);
+        if (ms) {
+            game->dialogue_tree = monologue_to_dialogue_tree(ms);
+            if (game->dialogue_tree) return;
+        }
+    }
+    game->dialogue_tree = dialogue_build_for_location(fallback_location_id);
+}
+
 static void handle_interaction(Game *game)
 {
     if (!game || !game->player || !game->world) return;
@@ -226,7 +256,7 @@ static void handle_interaction(Game *game)
         key.usable = 1;
         player_add_item(game->player, &key);
         game->player->flags |= FLAG_KEY_OBTAINED;
-        game->dialogue_tree = dialogue_build_for_location(4);
+        set_dialogue_tree(game, "key", 4);
     }
     /* Diary pickup (Library, trigger 1) */
     else if (tid == 1 && loc_id == 2) {
@@ -242,7 +272,7 @@ static void handle_interaction(Game *game)
             story_trigger_event(game->story, game->player,
                                 game->world, "find_diary");
         }
-        game->dialogue_tree = dialogue_build_for_location(2);
+        set_dialogue_tree(game, "diary", 2);
     }
     /* Basement door (Corridor, trigger 10) */
     else if (tid == 10 && loc_id == 1) {
@@ -263,9 +293,9 @@ static void handle_interaction(Game *game)
                     tz->spawn_y = (float)FLOOR_Y;
                 }
             }
-            game->dialogue_tree = dialogue_build_for_location(1 + 100);
+            set_dialogue_tree(game, "basement_door_unlocked", 1 + 100);
         } else {
-            game->dialogue_tree = dialogue_build_for_location(1);
+            set_dialogue_tree(game, "basement_door_locked", 1);
         }
     }
     /* Ritual circle (Ritual Room, trigger 20) */
@@ -285,7 +315,7 @@ static void handle_interaction(Game *game)
                                 game->world, "learn_truth");
             game->player->flags |= FLAG_LILY_TRUSTS_PLAYER;
         }
-        game->dialogue_tree = dialogue_build_for_location(5);
+        set_dialogue_tree(game, "ritual_circle", 5);
         /* Check for ending condition after ritual */
         if (game->player->flags & FLAG_KNOWS_TRUTH) {
             /* End will be triggered after dialogue */
@@ -294,11 +324,11 @@ static void handle_interaction(Game *game)
     }
     /* Portrait interaction (Entrance Hall, trigger 30) */
     else if (tid == 30 && loc_id == 0) {
-        game->dialogue_tree = dialogue_build_for_location(30);
+        set_dialogue_tree(game, "portrait", 30);
     }
     /* Stranger NPC interaction (Entrance Hall, trigger 40) */
     else if (tid == 40 && loc_id == 0) {
-        game->dialogue_tree = dialogue_build_for_location(40);
+        set_dialogue_tree(game, "stranger", 40);
     }
     /* Default interaction */
     else {
