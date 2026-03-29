@@ -222,10 +222,11 @@ void world_setup_rooms(World *world, SDL_Renderer *renderer)
                 if (m) {
                     map_build_colliders(m, loc);
 
-                    /* Place the player in a central floor tile. */
+                    /* Spawn in front of the door tiles (rows 10-12, cols ~271-279).
+                       Hint one row below the door run so we land on floor. */
                     float sx = (float)(loc->room_width / 2);
                     float sy = (float)(loc->room_height / 2);
-                    map_find_spawn(m, m->rows / 2, m->cols / 2, &sx, &sy,
+                    map_find_spawn(m, 13, 275, &sx, &sy,
                                    loc->room_width, loc->room_height);
                     loc->spawn_x = sx;
                     loc->spawn_y = sy;
