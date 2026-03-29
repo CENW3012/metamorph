@@ -222,10 +222,11 @@ void world_setup_rooms(World *world, SDL_Renderer *renderer)
                 if (m) {
                     map_build_colliders(m, loc);
 
-                    /* Place the player in a central floor tile. */
+                    /* Spawn in front of the door tiles (rows 10-12, cols ~271-279).
+                       Hint one row below the door run so we land on floor. */
                     float sx = (float)(loc->room_width / 2);
                     float sy = (float)(loc->room_height / 2);
-                    map_find_spawn(m, m->rows / 2, m->cols / 2, &sx, &sy,
+                    map_find_spawn(m, 13, 275, &sx, &sy,
                                    loc->room_width, loc->room_height);
                     loc->spawn_x = sx;
                     loc->spawn_y = sy;
@@ -240,7 +241,7 @@ void world_setup_rooms(World *world, SDL_Renderer *renderer)
                 break;
             }
 
-            case 1: {
+        case 1: {
                 loc->background_texture = render_load_texture(
                     renderer, "assets/room/room2.png");
                 if (loc->background_texture) {
@@ -250,13 +251,57 @@ void world_setup_rooms(World *world, SDL_Renderer *renderer)
                         loc->room_height = (int)th;
                     }
                 }
-                loc->spawn_x = (float)(loc->room_width / 2);
-                loc->spawn_y = (float)(loc->room_height / 2);
+
+                /* Load collision map and find spawn near the entrance door. */
+                Map *m = map_load_csv("maps/logic kimia_logic.csv");
+                if (m) {
+                    map_build_colliders(m, loc);
+
+                    /* Hint one row above the door tiles (rows 23-25, cols 11-14)
+                       so the player spawns just in front of the door. */
+                    float sx = (float)(loc->room_width  / 2);
+                    float sy = (float)(loc->room_height / 2);
+                    map_find_spawn(m, m->rows - 5, 12, &sx, &sy,
+                                   loc->room_width, loc->room_height);
+                    loc->spawn_x = sx;
+                    loc->spawn_y = sy;
+
+                    map_free(m);
+                } else {
+                    loc->spawn_x = (float)(loc->room_width  / 2);
+                    loc->spawn_y = (float)(loc->room_height / 2);
+                }
 
                 break;
             }
         default:
             break;
+        }
+    }
+
+    /* ── Post-setup: link door triggers between rooms ──────────────────── */
+    /* Room 0's entrance door (tile 1 in archive tutup_logic.csv) leads to
+       room 1 (kimia).  We reload the CSV here so the spawn coordinates from
+       room 1's setup can be used as the destination spawn position. */
+    {
+        Location *loc0 = world_get_location(world, 0);
+        Location *loc1 = world_get_location(world, 1);
+        if (loc0 && loc1) {
+            Map *m = map_load_csv("maps/logic archive tutup_logic.csv");
+            if (m) {
+                map_build_door_triggers(m, loc0, 1,
+                                        loc1->spawn_x, loc1->spawn_y);
+                map_free(m);
+            }
+
+            /* Room 1's door tiles (tile 1 in logic kimia_logic.csv) lead back
+               to room 0, spawning the player in front of room 0's door. */
+            Map *m2 = map_load_csv("maps/logic kimia_logic.csv");
+            if (m2) {
+                map_build_door_triggers(m2, loc1, 0,
+                                        loc0->spawn_x, loc0->spawn_y);
+                map_free(m2);
+            }
         }
     }
 }

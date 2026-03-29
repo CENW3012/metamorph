@@ -643,17 +643,25 @@ void game_update(Game *game)
         game->interactive_trigger_id = -1;
 
         if (loc) {
+            /* Full sprite rect — used for interactive-proximity checks */
             Rect pr = {
                 p->x - half_w,
                 p->y - (float)PLAYER_SPRITE_H,
                 (float)PLAYER_W, (float)PLAYER_SPRITE_H
             };
+            /* Feet-only rect — used for room-transition triggers so the door
+               fires when the player's feet (bottom edge) enter the zone */
+            Rect feet = {
+                p->x - half_w,
+                p->y - 4.0f,
+                (float)PLAYER_W, 4.0f
+            };
             for (int i = 0; i < loc->trigger_count; i++) {
                 TriggerZone *tz = &loc->triggers[i];
 
                 if (tz->target_location_id >= 0) {
-                    /* Room transition */
-                    if (rect_overlaps(&pr, &tz->bounds)) {
+                    /* Room transition: only trigger when feet enter the zone */
+                    if (rect_overlaps(&feet, &tz->bounds)) {
                         game_change_location(game,
                             tz->target_location_id,
                             tz->spawn_x, tz->spawn_y);
