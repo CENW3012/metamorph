@@ -70,6 +70,9 @@ Game *game_init(SDL_Window *window, SDL_Renderer *renderer)
     /* Load Title Screen*/
     g->title_screen_texture = render_load_texture(renderer, "assets/title_screen.png");
 
+    /* Load locker view */
+    g->locker_texture = render_load_texture(renderer, "assets/locker.png");
+
     return g;
 }
 
@@ -82,6 +85,7 @@ void game_cleanup(Game *game)
     if (game->dialogue_tree) dialogue_tree_destroy(game->dialogue_tree);
     dialogue_unload_texture(&game->dialogue_state);
     render_texture_destroy(game->title_screen_texture);
+    render_texture_destroy(game->locker_texture);
     free(game);
 }
 
@@ -238,6 +242,12 @@ static void handle_interaction(Game *game)
     /* Guard: don't open duplicate dialogue */
     if (game->dialogue_tree) return;
 
+    /* Locker interaction (Hallway, trigger 60) */
+    if (tid == 60 && loc_id == 2) {
+        game->state = GAME_STATE_LOCKER;
+        return;
+    }
+
     /* Portrait interaction (Entrance Hall, trigger 30) */
     if (tid == 30 && loc_id == 0) {
         set_dialogue_tree(game, "portrait", 30);
@@ -321,6 +331,14 @@ void game_handle_event(Game *game, SDL_Event *event)
                 break;
             default: break;
             }
+        }
+        break;
+
+    case GAME_STATE_LOCKER:
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            if (event->key.key == SDLK_ESCAPE ||
+                event->key.key == SDLK_E)
+                game->state = GAME_STATE_PLAYING;
         }
         break;
 
@@ -570,7 +588,10 @@ void game_update(Game *game)
                     if (rect_overlaps(&pr, &near_zone)) {
                         game->near_interactive       = 1;
                         game->interactive_trigger_id = tz->trigger_id;
-                        strncpy(game->interact_label, "Press E to talk",
+                        const char *label = (tz->trigger_id == 60)
+                            ? "Press [E] to enter locker"
+                            : "Press E to talk";
+                        strncpy(game->interact_label, label,
                                 sizeof(game->interact_label) - 1);
                         game->interact_label[sizeof(game->interact_label) - 1] = '\0';
                         break;
@@ -611,6 +632,7 @@ void game_render(Game *game)
         game_render_dialogue_overlay(game);
         break;
     case GAME_STATE_INVENTORY: game_render_inventory(game); break;
+    case GAME_STATE_LOCKER:    game_render_locker(game);    break;
     case GAME_STATE_PAUSE:
         game_render_playing(game);
         game_render_pause(game);
@@ -1007,4 +1029,21 @@ void game_render_settings(Game *game)
     render_text_centered(r,
         "UP/DOWN: select  |  LEFT/RIGHT: adjust  |  ESC: back",
         WINDOW_W/2, WINDOW_H - 28, 1, 78, 25, 25);
+}
+
+/* ── Locker view ─────────────────────────────────────────────────────────── */
+
+void game_render_locker(Game *game)
+{
+    if (!game) return;
+    SDL_Renderer *r = game->renderer;
+
+    if (game->locker_texture) {
+        render_texture(r, game->locker_texture, 0, 0, WINDOW_W, WINDOW_H);
+    } else {
+        render_filled_rect(r, 0, 0, WINDOW_W, WINDOW_H, 0, 0, 0, 255);
+    }
+
+    render_text_centered(r, "Press E or ESC to exit",
+                         WINDOW_W / 2, WINDOW_H - 28, 1, 200, 200, 200);
 }
