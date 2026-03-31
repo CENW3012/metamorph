@@ -197,9 +197,9 @@ void ui_draw_objective_bar(SDL_Renderer *renderer, const char *objective_text)
     char buf[128];
     snprintf(buf, sizeof(buf), "OBJECTIVE: %s", objective_text);
 
-    int scale  = 1;
-    int pad_x  = 12;
-    int pad_y  = 5;
+    int scale  = 2;
+    int pad_x  = 16;
+    int pad_y  = 8;
     int text_w = render_text_width(buf, scale);
     int text_h = 8 * scale;
 
