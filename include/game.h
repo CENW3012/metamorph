@@ -21,6 +21,7 @@ typedef enum {
     GAME_STATE_INVENTORY,
     GAME_STATE_PAUSE,
     GAME_STATE_SETTINGS,
+    GAME_STATE_LOCKER,
     GAME_STATE_QUIT
 } GameState;
 
@@ -79,6 +80,9 @@ typedef struct {
     char  pickup_item_name[64];  /* name of the last picked-up item */
     float pickup_notify_timer;   /* counts down from > 0; shown while > 0 */
 
+    /* Locker view */
+    SDL_Texture *locker_texture;
+
     /* Timing */
     Uint64 last_ticks;
     float  delta_time;
@@ -117,5 +121,6 @@ void game_render_dialogue_overlay(Game *game);
 void game_render_inventory(Game *game);
 void game_render_pause(Game *game);
 void game_render_settings(Game *game);
+void game_render_locker(Game *game);
 
 #endif /* GAME_H */
