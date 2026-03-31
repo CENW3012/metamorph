@@ -21,6 +21,22 @@ find_package(SDL3 REQUIRED CONFIG)
 # SDL3_image is optional; enables PNG loading for the dialogue background
 find_package(SDL3_image CONFIG)
 
+# Prefer static SDL3 target to avoid missing DLL at runtime
+if(TARGET SDL3::SDL3-static)
+    set(SDL3_LINK_TARGET SDL3::SDL3-static)
+else()
+    set(SDL3_LINK_TARGET SDL3::SDL3)
+endif()
+
+# Prefer static SDL3_image target
+if(TARGET SDL3_image::SDL3_image-static)
+    set(SDL3_IMAGE_LINK_TARGET SDL3_image::SDL3_image-static)
+elseif(TARGET SDL3_image::SDL3_image)
+    set(SDL3_IMAGE_LINK_TARGET SDL3_image::SDL3_image)
+else()
+    set(SDL3_IMAGE_LINK_TARGET "")
+endif()
+
 include_directories(include)
 
 add_executable(horrorgame
@@ -40,17 +56,23 @@ add_executable(horrorgame
     src/collision.c
 )
 
-target_link_libraries(horrorgame SDL3::SDL3)
+target_link_libraries(horrorgame ${SDL3_LINK_TARGET})
 
 # If SDL3_image was found, enable PNG loading for the dialogue background
-if(TARGET SDL3_image::SDL3_image)
+if(SDL3_IMAGE_LINK_TARGET)
     target_compile_definitions(horrorgame PRIVATE HAVE_SDL3_IMAGE=1)
-    target_link_libraries(horrorgame SDL3_image::SDL3_image)
+    target_link_libraries(horrorgame ${SDL3_IMAGE_LINK_TARGET})
 endif()
 
 # Link math library on Linux
 if(UNIX AND NOT APPLE)
     target_link_libraries(horrorgame m)
+endif()
+
+# On MinGW, statically link the C/C++ runtime to avoid missing
+# libgcc_s_seh-1.dll / libwinpthread-1.dll at runtime.
+if(MINGW)
+    target_link_options(horrorgame PRIVATE -static-libgcc -static-libstdc++)
 endif()
 
 # Copy assets folder to the build output directory after each build
