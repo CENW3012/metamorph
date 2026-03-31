@@ -296,8 +296,8 @@ void world_setup_rooms(World *world, SDL_Renderer *renderer)
                     float sy = (float)(loc->room_height / 2);
                     map_find_spawn(m, m->rows / 2, m->cols / 2, &sx, &sy,
                                    loc->room_width, loc->room_height);
-                    loc->spawn_x = sx;
-                    loc->spawn_y = sy;
+                    loc->spawn_x = 500.0f;
+                    loc->spawn_y = 500.0f;
 
                     map_free(m);
                 } else {
