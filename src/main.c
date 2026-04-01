@@ -2,6 +2,11 @@
 #ifdef HAVE_SDL3_IMAGE
 #include <SDL3_image/SDL_image.h>
 #endif
+#ifdef _WIN32
+#include <direct.h>   /* _chdir */
+#else
+#include <unistd.h>   /* chdir  */
+#endif
 #include "game.h"
 
 int main(int argc, char *argv[])
@@ -13,11 +18,31 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-#ifdef HAVE_SDL3_IMAGE
-    if (!(IMG_Init(IMG_INIT_PNG | IMG_INIT_WEBP) & IMG_INIT_PNG)) {
-        SDL_Log("IMG_Init: PNG support unavailable – textures will not render: %s",
-                SDL_GetError());
+    /* Change CWD to the executable's directory so that relative paths
+       like "assets/..." and "maps/..." resolve correctly regardless of
+       how or from where the binary is launched. */
+    {
+        char *base = SDL_GetBasePath();
+        if (base) {
+#ifdef _WIN32
+            if (_chdir(base) != 0)
+                SDL_Log("main: failed to set working directory to '%s'", base);
+#else
+            if (chdir(base) != 0)
+                SDL_Log("main: failed to set working directory to '%s'", base);
+#endif
+            SDL_free(base);
+        }
     }
+
+#ifdef HAVE_SDL3_IMAGE
+    /* SDL3_image < 3.4 requires explicit initialisation to activate format
+       decoders (e.g. PNG).  3.4 removed IMG_Init/IMG_Quit entirely, so the
+       block below is compiled out when building against those headers. */
+#if SDL_IMAGE_MAJOR_VERSION == 3 && SDL_IMAGE_MINOR_VERSION < 4
+    if (!(IMG_Init(IMG_INIT_PNG | IMG_INIT_WEBP) & IMG_INIT_PNG))
+        SDL_Log("IMG_Init: PNG support unavailable: %s", SDL_GetError());
+#endif
 #endif
 
     SDL_Window *window = SDL_CreateWindow(
@@ -74,7 +99,9 @@ int main(int argc, char *argv[])
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 #ifdef HAVE_SDL3_IMAGE
+#if SDL_IMAGE_MAJOR_VERSION == 3 && SDL_IMAGE_MINOR_VERSION < 4
     IMG_Quit();
+#endif
 #endif
     SDL_Quit();
     return 0;
