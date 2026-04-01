@@ -45,11 +45,12 @@ jobs:
           mkdir -p horrorgame-windows
           cp build/Release/horrorgame.exe horrorgame-windows/ || cp build/horrorgame.exe horrorgame-windows/
           cp -r assets horrorgame-windows/ || echo "Assets not found, continuing..."
-          
-          # Try to find and copy SDL3 DLLs
-          find vcpkg/installed -name "SDL3.dll" -exec cp {} horrorgame-windows/ \; 2>/dev/null || true
-          find vcpkg/installed -name "SDL3_image.dll" -exec cp {} horrorgame-windows/ \; 2>/dev/null || true
-          
+
+          # Copy all runtime DLLs from vcpkg (SDL3, SDL3_image and their
+          # dependencies: libpng, zlib, libjpeg, libwebp, libtiff, etc.)
+          find vcpkg/installed/x64-windows/bin -name "*.dll" \
+            -exec cp {} horrorgame-windows/ \; 2>/dev/null || true
+
           # List what we copied
           ls -la horrorgame-windows/
 
