@@ -2,6 +2,11 @@
 #ifdef HAVE_SDL3_IMAGE
 #include <SDL3_image/SDL_image.h>
 #endif
+#ifdef _WIN32
+#include <direct.h>   /* _chdir */
+#else
+#include <unistd.h>   /* chdir  */
+#endif
 #include "game.h"
 
 int main(int argc, char *argv[])
@@ -19,7 +24,13 @@ int main(int argc, char *argv[])
     {
         char *base = SDL_GetBasePath();
         if (base) {
-            SDL_SetCurrentDirectory(base);
+#ifdef _WIN32
+            if (_chdir(base) != 0)
+                SDL_Log("main: failed to set working directory to '%s'", base);
+#else
+            if (chdir(base) != 0)
+                SDL_Log("main: failed to set working directory to '%s'", base);
+#endif
             SDL_free(base);
         }
     }
