@@ -13,6 +13,27 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    /* Change CWD to the executable's directory so that relative paths
+       like "assets/..." and "maps/..." resolve correctly regardless of
+       how or from where the binary is launched. */
+    {
+        char *base = SDL_GetBasePath();
+        if (base) {
+            SDL_SetCurrentDirectory(base);
+            SDL_free(base);
+        }
+    }
+
+#ifdef HAVE_SDL3_IMAGE
+    /* SDL3_image < 3.4 requires explicit initialisation to activate format
+       decoders (e.g. PNG).  3.4 removed IMG_Init/IMG_Quit entirely, so the
+       block below is compiled out when building against those headers. */
+#if SDL_IMAGE_MAJOR_VERSION == 3 && SDL_IMAGE_MINOR_VERSION < 4
+    if (!(IMG_Init(IMG_INIT_PNG | IMG_INIT_WEBP) & IMG_INIT_PNG))
+        SDL_Log("IMG_Init: PNG support unavailable: %s", SDL_GetError());
+#endif
+#endif
+
     SDL_Window *window = SDL_CreateWindow(
         "Project Yozora – A Horror Story",
         WINDOW_W, WINDOW_H, 0);
@@ -66,6 +87,11 @@ int main(int argc, char *argv[])
     game_cleanup(game);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+#ifdef HAVE_SDL3_IMAGE
+#if SDL_IMAGE_MAJOR_VERSION == 3 && SDL_IMAGE_MINOR_VERSION < 4
+    IMG_Quit();
+#endif
+#endif
     SDL_Quit();
     return 0;
 }
