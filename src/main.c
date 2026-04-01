@@ -13,13 +13,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-#ifdef HAVE_SDL3_IMAGE
-    if (!(IMG_Init(IMG_INIT_PNG | IMG_INIT_WEBP) & IMG_INIT_PNG)) {
-        SDL_Log("IMG_Init: PNG support unavailable – textures will not render: %s",
-                SDL_GetError());
-    }
-#endif
-
     SDL_Window *window = SDL_CreateWindow(
         "Project Yozora – A Horror Story",
         WINDOW_W, WINDOW_H, 0);
@@ -73,9 +66,6 @@ int main(int argc, char *argv[])
     game_cleanup(game);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
-#ifdef HAVE_SDL3_IMAGE
-    IMG_Quit();
-#endif
     SDL_Quit();
     return 0;
 }
