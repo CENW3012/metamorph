@@ -71,11 +71,11 @@ The power cell slots into place with a satisfying click.
 [hibern_pods_opened]
 Alex
 ---
-Some of these are already open — so someone woke up before me.
+Some of these are already open, I wonder what these are.
 ---
 
 [hibern_door_locked]
 Alex
 ---
-Low power? Great, I just woke up and I'm already trapped.
+It looks like I have to find a way to turn the power on.
 ---
