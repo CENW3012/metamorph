@@ -274,34 +274,34 @@ static void handle_interaction(Game *game)
             if (player_has_item(game->player, ITEM_ID_POWERCELL)) {
                 player_remove_item(game->player, ITEM_ID_POWERCELL);
                 player_set_flag(game->player, FLAG_HIBERN_POWERCELL_PLACED);
+
+                /* Open the door: remove tile-5 collision barrier and convert
+                   the tile-5 interactive triggers into real exit triggers so
+                   the player can walk through to the hallway.
+                   Note: door colliders are always the last ones added in
+                   world_setup_rooms (after map_build_colliders and before any
+                   trigger registration), so truncating to door_collider_start
+                   removes exactly and only the door colliders. */
+                Location *hloc = world_get_location(game->world, 3);
+                if (hloc) {
+                    hloc->collider_count = hloc->door_collider_start;
+                    for (int i = 0; i < hloc->trigger_count; i++) {
+                        if (hloc->triggers[i].trigger_id == 75) {
+                            hloc->triggers[i].target_location_id = 2;
+                        }
+                    }
+                }
+
                 set_dialogue_tree(game, "hibern_slot_place", 3);
             } else {
                 set_dialogue_tree(game, "hibern_slot_empty", 3);
             }
         } else if (tid == 74) {
-            /* Tile 4: flavour description – accessible any time */
+            /* Tile 4: flavor description – accessible any time */
             set_dialogue_tree(game, "hibern_pods_opened", 3);
         } else if (tid == 75) {
-            /* Tile 5: door to hallway – locked until powercell placed */
-            if (player_check_flag(game->player, FLAG_HIBERN_POWERCELL_PLACED)) {
-                Location *hloc = world_get_location(game->world, 3);
-                if (hloc) {
-                    for (int i = 0; i < hloc->trigger_count; i++) {
-                        if (hloc->triggers[i].trigger_id == 75) {
-                            game_change_location(game, 2,
-                                hloc->triggers[i].spawn_x,
-                                hloc->triggers[i].spawn_y);
-                            return;
-                        }
-                    }
-                }
-                /* Fallback: use hallway default spawn */
-                Location *hw = world_get_location(game->world, 2);
-                if (hw) game_change_location(game, 2, hw->spawn_x, hw->spawn_y);
-                return;
-            } else {
-                set_dialogue_tree(game, "hibern_door_locked", 3);
-            }
+            /* Tile 5: door – still interactive = still locked */
+            set_dialogue_tree(game, "hibern_door_locked", 3);
         }
         if (game->dialogue_tree)
             game_start_dialogue(game, 0);

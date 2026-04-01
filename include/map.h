@@ -81,4 +81,12 @@ int map_build_interactive_triggers_for_tile(const Map *map, Location *loc,
                                              int tile, int trigger_id,
                                              float spawn_x, float spawn_y);
 
+/*
+ * Build collision rectangles for every run of 'tile' in 'map'.
+ * Identical merge logic to map_build_colliders() but scans for an arbitrary
+ * tile value instead of MAP_TILE_WALL.
+ * Returns the number of colliders added, or -1 if loc is NULL.
+ */
+int map_build_colliders_for_tile(const Map *map, Location *loc, int tile);
+
 #endif /* MAP_H */

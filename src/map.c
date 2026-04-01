@@ -117,6 +117,40 @@ int map_build_colliders(const Map *map, Location *loc)
     return added;
 }
 
+int map_build_colliders_for_tile(const Map *map, Location *loc, int tile)
+{
+    if (!loc) return -1;
+    if (!map || !map->cells) return 0;
+
+    int added = 0;
+    float tile_w = (float)loc->room_width  / (float)map->cols;
+    float tile_h = (float)loc->room_height / (float)map->rows;
+
+    for (int r = 0; r < map->rows; r++) {
+        int c = 0;
+        while (c < map->cols) {
+            if (map->cells[r * map->cols + c] == tile) {
+                int run_start = c;
+                while (c < map->cols &&
+                       map->cells[r * map->cols + c] == tile)
+                    c++;
+                if (loc->collider_count < MAX_COLLISION_RECTS) {
+                    Rect *rect = &loc->colliders[loc->collider_count++];
+                    rect->x = (float)run_start * tile_w;
+                    rect->y = (float)r          * tile_h;
+                    rect->w = (float)(c - run_start) * tile_w;
+                    rect->h = tile_h;
+                    added++;
+                }
+            } else {
+                c++;
+            }
+        }
+    }
+
+    return added;
+}
+
 /* ── Door-trigger building ─────────────────────────────────────────────── */
 
 int map_build_door_triggers_for_tile(const Map *map, Location *loc,

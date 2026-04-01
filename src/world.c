@@ -345,15 +345,21 @@ void world_setup_rooms(World *world, SDL_Renderer *renderer)
                     loc->spawn_y = sy;
 
                     /* Interactive triggers for tile 1 (zonk), 2 (powercell),
-                       3 (powercell slot), 4 (flavour description).
+                       3 (powercell slot), 4 (flavor description).
                        Trigger IDs 71–74 are handled in game.c handle_interaction. */
                     map_build_interactive_triggers_for_tile(m, loc, 1, 71, 0.0f, 0.0f);
                     map_build_interactive_triggers_for_tile(m, loc, 2, 72, 0.0f, 0.0f);
                     map_build_interactive_triggers_for_tile(m, loc, 3, 73, 0.0f, 0.0f);
                     map_build_interactive_triggers_for_tile(m, loc, 4, 74, 0.0f, 0.0f);
-                    /* Tile-5 door: handled as interactive (trigger 75) so the game
-                       can show a locked message until the powercell is placed.
+                    /* Tile-5 door: physical collision barrier until the powercell is
+                       placed.  Build colliders for tile-5, recording the range so
+                       game.c can remove them when the door opens.
+                       Also add interactive trigger 75 so the locked message is shown
+                       while the door is still blocked.
                        Spawn coords are filled in below after hw1x/hw1y are known. */
+                    loc->door_collider_start = loc->collider_count;
+                    map_build_colliders_for_tile(m, loc, 5);
+                    loc->door_collider_count = loc->collider_count - loc->door_collider_start;
                     map_build_interactive_triggers_for_tile(m, loc, 5, 75, 0.0f, 0.0f);
 
                     map_free(m);
