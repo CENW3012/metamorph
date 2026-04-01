@@ -35,3 +35,9 @@ ROOM 2 Hallway
 # Player start location
 SPAWN 500 500
 END
+
+ROOM 3 Hibernation Chamber
+# Tile map: maps/hibernation.csv
+# Background: assets/room/hibernation.png
+SPAWN 775 400
+END

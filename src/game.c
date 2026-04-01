@@ -124,7 +124,7 @@ void game_start_new(Game *game)
     story_populate_world(game->world, "assets/locations.txt");
     world_setup_rooms(game->world, game->renderer);
 
-    game->player->current_location_id = 2;  /* Start in the Hallway */
+    game->player->current_location_id = 3;  /* Start in Room 3 */
 
     Location *start = world_get_location(game->world,
                                          game->player->current_location_id);
@@ -133,8 +133,8 @@ void game_start_new(Game *game)
     camera_init(&game->camera, WINDOW_W, WINDOW_H, start_w, start_h);
 
     if (start) {
-        game->player->x = start->spawn_x;
-        game->player->y = start->spawn_y;
+        game->player->x = 725.0f;  /* Your X coordinate */
+        game->player->y = 390.0f;  /* Your Y coordinate */
     }
     camera_snap(&game->camera, game->player->x, game->player->y);
 
